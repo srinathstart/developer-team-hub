@@ -1,7 +1,7 @@
 function validateProject(req, res, next) {
     const { name } = req.body;
 
-    if (!name || name.trim() === "") {
+    if (typeof name !== "string" || name.trim() === "") {
         return res.status(400).json({
             error: "Project name is required"
         });
@@ -11,4 +11,3 @@ function validateProject(req, res, next) {
 }
 
 module.exports = validateProject;
-

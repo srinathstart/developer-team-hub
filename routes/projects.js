@@ -6,7 +6,11 @@ const adminOnly = require("../middleware/adminOnly");
 
 const router = express.Router();
 
-const dataFile = path.join(__dirname, "../data/projects.json");
+const dataFile =
+    process.env.NODE_ENV === "test"
+        ? path.join(__dirname, "../data/projects.test.json")
+        : path.join(__dirname, "../data/projects.json");
+        
 const projectEvents = require("../events/projectEvents");
 const auth = require("../middleware/auth");
 router.use(auth);
@@ -61,12 +65,6 @@ router.get("/:id", (req, res) => {
 router.post("/", validateProject, async (req, res) => {
     const project = req.body;
 
-    if (!project.name || project.name.trim() === "") {
-        return res.status(400).json({
-            error: "Project name is required"
-        });
-    }
-
     const newProject = {
         id: nextProjectId,
         name: project.name
@@ -97,12 +95,6 @@ router.patch("/:id", validateProject, async (req, res) => {
     }
 
     const { name } = req.body;
-
-    if (!name || name.trim() === "") {
-        return res.status(400).json({
-            error: "Project name is required"
-        });
-    }
 
     project.name = name;
     await saveProjects();
