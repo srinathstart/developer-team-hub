@@ -1,11 +1,15 @@
 const express = require("express");
 const fs = require("fs").promises;
 const path = require("path");
+const adminOnly = require("../middleware/adminOnly");
+
 
 const router = express.Router();
 
 const dataFile = path.join(__dirname, "../data/projects.json");
 const projectEvents = require("../events/projectEvents");
+const auth = require("../middleware/auth");
+router.use(auth);
 
 let projects = [];
 let nextProjectId = 1;
@@ -110,7 +114,7 @@ router.patch("/:id", validateProject, async (req, res) => {
     });
 });
 
-router.delete("/:id", async (req, res) => {
+router.delete("/:id", adminOnly,async (req, res) => {
     const id = Number(req.params.id);
 
     const projectIndex = projects.findIndex(

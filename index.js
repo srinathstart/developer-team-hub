@@ -1,11 +1,13 @@
 const express = require("express");
 const http =require("http");
 const WebSocket =require("ws");
+require("dotenv").config();
 
 const logger = require("./middleware/logger");
 const errorHandler = require("./middleware/errorHandler");
 const projectListeners = require("./events/projectListeners");
 const projectEvents = require("./events/projectEvents");
+const authRouter = require("./routes/auth");
 
 
 const app = express();
@@ -57,6 +59,7 @@ const {
 
 app.use(express.json());
 app.use(logger);
+app.use("/auth", authRouter);
 
 
 app.get("/", (req, res) => {
