@@ -84,4 +84,20 @@ async function startServer() {
     });
 }
 
-startServer();
+function shutdown() {
+    console.log("Shutting down server...");
+
+    server.close(() => {
+        console.log("Server closed");
+        process.exit(0);
+    });
+}
+
+if (require.main === module) {
+    startServer();
+
+    process.on("SIGINT", shutdown);
+    process.on("SIGTERM", shutdown);
+}
+
+module.exports = app;

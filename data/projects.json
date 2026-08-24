@@ -1,6 +1,10 @@
 [
   {
-    "id": 3,
-    "name": "Event Driven Project"
+    "id": 1,
+    "name": "Test Project"
+  },
+  {
+    "id": 2,
+    "name": "Protected Project"
   }
 ]
