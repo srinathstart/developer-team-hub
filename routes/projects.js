@@ -5,6 +5,7 @@ const path = require("path");
 const router = express.Router();
 
 const dataFile = path.join(__dirname, "../data/projects.json");
+const projectEvents = require("../events/projectEvents");
 
 let projects = [];
 let nextProjectId = 1;
@@ -70,6 +71,7 @@ router.post("/", validateProject, async (req, res) => {
     nextProjectId++;
     projects.push(newProject);
     await saveProjects();
+    projectEvents.emit("projectCreated", newProject);
 
     res.status(201).json({
         message: "Project created",
@@ -100,6 +102,7 @@ router.patch("/:id", validateProject, async (req, res) => {
 
     project.name = name;
     await saveProjects();
+    projectEvents.emit("projectUpdated", project);
 
     res.json({
         message: "Project updated",
@@ -122,6 +125,7 @@ router.delete("/:id", async (req, res) => {
 
     const deletedProject = projects.splice(projectIndex, 1)[0];
     await saveProjects();
+    projectEvents.emit("projectDeleted", deletedProject);
 
     res.json({
         message: "Project deleted",

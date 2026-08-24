@@ -5,6 +5,7 @@ const {
 } = require("./routes/projects");
 const logger = require("./middleware/logger");
 const errorHandler = require("./middleware/errorHandler");
+const projectListeners = require("./events/projectListeners");
 
 const app = express();
 
