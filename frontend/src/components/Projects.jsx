@@ -38,6 +38,51 @@ function Projects() {
         getProjects();
     }, [navigate]);
 
+    useEffect(() => {
+        const socket = new WebSocket("ws://localhost:3000");
+
+        socket.onopen = () => {
+            console.log("WebSocket connected");
+        };
+
+        socket.onmessage = (event) => {
+    const message = JSON.parse(event.data);
+
+    if (message.type === "projectCreated") {
+        setProjects((currentProjects) => [
+            ...currentProjects,
+            message.project
+        ]);
+    }
+
+    if (message.type === "projectUpdated") {
+        setProjects((currentProjects) =>
+            currentProjects.map((project) =>
+                project.id === message.project.id
+                    ? message.project
+                    : project
+            )
+        );
+    }
+
+    if (message.type === "projectDeleted") {
+        setProjects((currentProjects) =>
+            currentProjects.filter(
+                (project) => project.id !== message.project.id
+            )
+        );
+    }
+};
+
+        socket.onclose = () => {
+            console.log("WebSocket disconnected");
+        };
+
+        return () => {
+            socket.close();
+        };
+    }, []);
+
     function handleLogout() {
         localStorage.removeItem("token");
         navigate("/login");
@@ -62,7 +107,6 @@ function Projects() {
         const data = await response.json();
 
         if (response.ok) {
-            setProjects([...projects, data.project]);
             setName("");
         } else {
             console.log(data);
@@ -94,14 +138,6 @@ function Projects() {
         const data = await response.json();
 
         if (response.ok) {
-            setProjects(
-                projects.map((project) =>
-                    project.id === id
-                        ? data.project
-                        : project
-                )
-            );
-
             setEditingId(null);
             setEditName("");
         } else {
@@ -124,11 +160,7 @@ function Projects() {
 
         const data = await response.json();
 
-        if (response.ok) {
-            setProjects(
-                projects.filter((project) => project.id !== id)
-            );
-        } else {
+        if (!response.ok) {
             console.log(data);
         }
     }
