@@ -1,6 +1,7 @@
 const express = require("express");
 const http =require("http");
 const WebSocket =require("ws");
+const cors = require("cors");
 require("dotenv").config();
 
 const logger = require("./middleware/logger");
@@ -11,6 +12,11 @@ const authRouter = require("./routes/auth");
 
 
 const app = express();
+
+app.use(cors({
+    origin: "http://localhost:5173"
+}));
+
 
 const server = http.createServer(app);
 

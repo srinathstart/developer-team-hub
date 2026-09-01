@@ -6,5 +6,13 @@
   {
     "id": 2,
     "name": "Protected Project"
+  },
+  {
+    "id": 3,
+    "name": "Frontend Project"
+  },
+  {
+    "id": 4,
+    "name": "React Dashboard"
   }
 ]
