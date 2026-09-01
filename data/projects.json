@@ -1,11 +1,7 @@
 [
   {
-    "id": 1,
-    "name": "Test Project"
-  },
-  {
     "id": 2,
-    "name": "Protected Project"
+    "name": "Protected Project 1"
   },
   {
     "id": 3,
@@ -14,5 +10,13 @@
   {
     "id": 4,
     "name": "React Dashboard"
+  },
+  {
+    "id": 5,
+    "name": "react 1"
+  },
+  {
+    "id": 6,
+    "name": "react 2"
   }
 ]

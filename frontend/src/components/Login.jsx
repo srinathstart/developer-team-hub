@@ -1,6 +1,10 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+
 
 function Login() {
+    const navigate = useNavigate();
+    
     const [username, setUsername] = useState("");
     const [password, setPassword] = useState("");
 
@@ -21,6 +25,7 @@ function Login() {
     const data = await response.json();
     if (response.ok) {
     localStorage.setItem("token", data.token);
+    navigate("/projects");
 }
 
     console.log(data);
