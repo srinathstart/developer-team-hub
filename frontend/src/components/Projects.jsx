@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import ProjectForm from "./ProjectForm";
+import ProjectItem from "./ProjectItem";
 
 function Projects() {
     const [projects, setProjects] = useState([]);
-    const [name, setName] = useState("");
 
     const [editingId, setEditingId] = useState(null);
     const [editName, setEditName] = useState("");
@@ -88,35 +89,35 @@ function Projects() {
         navigate("/login");
     }
 
-    async function handleCreateProject(e) {
-        e.preventDefault();
+    async function handleCreateProject(name) {
+    const token = localStorage.getItem("token");
 
-        const token = localStorage.getItem("token");
+    const response = await fetch("http://localhost:3000/projects", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({
+            name
+        })
+    });
 
-        const response = await fetch("http://localhost:3000/projects", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                Authorization: `Bearer ${token}`
-            },
-            body: JSON.stringify({
-                name
-            })
-        });
+    const data = await response.json();
 
-        const data = await response.json();
-
-        if (response.ok) {
-            setName("");
-        } else {
-            console.log(data);
-        }
+    if (!response.ok) {
+        console.log(data);
     }
+}
 
     function startEditing(project) {
         setEditingId(project.id);
         setEditName(project.name);
     }
+    function cancelEditing() {
+    setEditingId(null);
+    setEditName("");
+}
 
     async function handleEditProject(id) {
         const token = localStorage.getItem("token");
@@ -173,69 +174,21 @@ function Projects() {
                 Logout
             </button>
 
-            <form onSubmit={handleCreateProject}>
-                <input
-                    type="text"
-                    placeholder="Project name"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                />
-
-                <button type="submit">
-                    Create Project
-                </button>
-            </form>
+            <ProjectForm onCreate={handleCreateProject} />
 
             {projects.map((project) => (
-                <div key={project.id}>
-                    {editingId === project.id ? (
-                        <>
-                            <input
-                                type="text"
-                                value={editName}
-                                onChange={(e) =>
-                                    setEditName(e.target.value)
-                                }
-                            />
-
-                            <button
-                                onClick={() =>
-                                    handleEditProject(project.id)
-                                }
-                            >
-                                Save
-                            </button>
-
-                            <button
-                                onClick={() => {
-                                    setEditingId(null);
-                                    setEditName("");
-                                }}
-                            >
-                                Cancel
-                            </button>
-                        </>
-                    ) : (
-                        <>
-                            <span>{project.name}</span>
-
-                            <button
-                                onClick={() => startEditing(project)}
-                            >
-                                Edit
-                            </button>
-
-                            <button
-                                onClick={() =>
-                                    handleDeleteProject(project.id)
-                                }
-                            >
-                                Delete
-                            </button>
-                        </>
-                    )}
-                </div>
-            ))}
+    <ProjectItem
+        key={project.id}
+        project={project}
+        editingId={editingId}
+        editName={editName}
+        setEditName={setEditName}
+        startEditing={startEditing}
+        handleEditProject={handleEditProject}
+        handleDeleteProject={handleDeleteProject}
+        cancelEditing={cancelEditing}
+    />
+))}
         </div>
     );
 }
