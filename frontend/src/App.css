@@ -1,42 +1,225 @@
+* {
+    box-sizing: border-box;
+}
+
 body {
-    font-family: Arial, sans-serif;
     margin: 0;
-    background: #f5f5f5;
+    font-family: Arial, sans-serif;
+    background: #f4f6f8;
 }
 
 #root {
-    max-width: 800px;
-    margin: 40px auto;
+    min-height: 100vh;
+}
+
+/* LOGIN PAGE */
+
+.login-page {
+    min-height: 100vh;
+
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
     padding: 20px;
 }
 
-h1,
-h2 {
-    margin-bottom: 20px;
+.login-card {
+    width: 100%;
+    max-width: 450px;
+
+    background: white;
+
+    padding: 32px;
+
+    border: 1px solid #ddd;
+    border-radius: 10px;
 }
 
-form {
+.login-card h1 {
+   font-size: 32px;
+    line-height: 1.1;
+    text-align: center;
+    margin-top: 0;
+    margin-bottom: 10px;
+}
+
+.login-card h2 {
+    text-align: center;
+    margin-bottom: 24px;
+}
+
+.login-form {
     display: flex;
-    gap: 10px;
-    margin-bottom: 20px;
+    flex-direction: column;
+    gap: 15px;
 }
 
-input {
-    padding: 8px;
+.login-form input {
+    width: 100%;
+
+    padding: 12px;
+
     font-size: 16px;
+
+    border: 1px solid #ccc;
+    border-radius: 6px;
 }
+
+.login-form button {
+    padding: 12px;
+
+    font-size: 16px;
+
+    border: none;
+    border-radius: 6px;
+
+    cursor: pointer;
+}
+
+/* PROJECT PAGE */
 
 button {
     padding: 8px 12px;
     cursor: pointer;
 }
 
+form {
+    margin-bottom: 20px;
+}
+
 .project-item {
     display: flex;
-    gap: 10px;
     align-items: center;
+    gap: 10px;
+
+    padding: 12px;
     margin-bottom: 10px;
-    padding: 10px;
+
     background: white;
+
     border: 1px solid #ddd;
+    border-radius: 6px;
+}
+
+.login-card h1,
+.login-card h2 {
+    color: #222;
+}
+
+.login-form input {
+    background: white;
+    color: #222;
+}
+
+.login-form button {
+    background: #222;
+    color: white;
+}
+
+/* PROJECTS PAGE */
+
+.projects-page {
+    min-height: 100vh;
+    padding: 40px 20px;
+}
+
+.projects-card {
+    max-width: 800px;
+    margin: 0 auto;
+
+    background: white;
+
+    padding: 30px;
+
+    border: 1px solid #ddd;
+    border-radius: 10px;
+}
+
+.projects-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+
+    margin-bottom: 20px;
+}
+
+.projects-header h1 {
+    margin: 0;
+    color: #222;
+}
+
+.projects-card h2 {
+    color: #222;
+}
+
+/* CREATE PROJECT FORM */
+
+.projects-card form {
+    display: flex;
+    gap: 10px;
+
+    margin-bottom: 25px;
+}
+
+.projects-card form input {
+    flex: 1;
+
+    padding: 10px;
+
+    font-size: 16px;
+
+    border: 1px solid #ccc;
+    border-radius: 6px;
+}
+
+.projects-card form button {
+    padding: 10px 16px;
+
+    border: none;
+    border-radius: 6px;
+
+    background: #222;
+    color: white;
+
+    cursor: pointer;
+}
+
+/* PROJECT ITEM */
+
+.project-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+
+    padding: 12px;
+    margin-bottom: 10px;
+
+    background: #f8f8f8;
+
+    border: 1px solid #ddd;
+    border-radius: 6px;
+}
+
+.project-item span {
+    flex: 1;
+    color: #222;
+}
+
+.project-item input {
+    flex: 1;
+
+    padding: 8px;
+
+    border: 1px solid #ccc;
+    border-radius: 6px;
+}
+
+.project-item button {
+    padding: 8px 12px;
+
+    border: none;
+    border-radius: 6px;
+
+    cursor: pointer;
 }

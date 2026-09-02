@@ -167,30 +167,36 @@ function Projects() {
     }
 
     return (
-        <div>
-            <h2>Projects</h2>
+    <div className="projects-page">
+        <div className="projects-card">
+            <div className="projects-header">
+                <h1>Developer Team Hub</h1>
 
-            <button onClick={handleLogout}>
-                Logout
-            </button>
+                <button onClick={handleLogout}>
+                    Logout
+                </button>
+            </div>
+
+            <h2>Projects</h2>
 
             <ProjectForm onCreate={handleCreateProject} />
 
             {projects.map((project) => (
-    <ProjectItem
-        key={project.id}
-        project={project}
-        editingId={editingId}
-        editName={editName}
-        setEditName={setEditName}
-        startEditing={startEditing}
-        handleEditProject={handleEditProject}
-        handleDeleteProject={handleDeleteProject}
-        cancelEditing={cancelEditing}
-    />
-))}
+                <ProjectItem
+                    key={project.id}
+                    project={project}
+                    editingId={editingId}
+                    editName={editName}
+                    setEditName={setEditName}
+                    startEditing={startEditing}
+                    handleEditProject={handleEditProject}
+                    handleDeleteProject={handleDeleteProject}
+                    cancelEditing={cancelEditing}
+                />
+            ))}
         </div>
-    );
+    </div>
+);
 }
 
 export default Projects;
