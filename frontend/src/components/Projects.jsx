@@ -10,6 +10,8 @@ function Projects() {
     const [editName, setEditName] = useState("");
 
     const navigate = useNavigate();
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState("");
 
     useEffect(() => {
         async function getProjects() {
@@ -20,6 +22,8 @@ function Projects() {
                 return;
             }
 
+
+            setError("");
             const response = await fetch("http://localhost:3000/projects", {
                 headers: {
                     Authorization: `Bearer ${token}`
@@ -27,6 +31,7 @@ function Projects() {
             });
 
             const data = await response.json();
+            
 
             if (response.ok) {
                 setProjects(data);
@@ -34,6 +39,7 @@ function Projects() {
                 localStorage.removeItem("token");
                 navigate("/login");
             }
+            setLoading(false);
         }
 
         getProjects();
@@ -91,6 +97,7 @@ function Projects() {
 
     async function handleCreateProject(name) {
     const token = localStorage.getItem("token");
+    setError("");
 
     const response = await fetch("http://localhost:3000/projects", {
         method: "POST",
@@ -106,7 +113,7 @@ function Projects() {
     const data = await response.json();
 
     if (!response.ok) {
-        console.log(data);
+        setError(data.error || "Something went wrong");
     }
 }
 
@@ -121,6 +128,7 @@ function Projects() {
 
     async function handleEditProject(id) {
         const token = localStorage.getItem("token");
+        setError("");
 
         const response = await fetch(
             `http://localhost:3000/projects/${id}`,
@@ -142,13 +150,13 @@ function Projects() {
             setEditingId(null);
             setEditName("");
         } else {
-            console.log(data);
+            setError(data.error || "Something went wrong");
         }
     }
 
     async function handleDeleteProject(id) {
         const token = localStorage.getItem("token");
-
+        setError("");
         const response = await fetch(
             `http://localhost:3000/projects/${id}`,
             {
@@ -162,9 +170,13 @@ function Projects() {
         const data = await response.json();
 
         if (!response.ok) {
-            console.log(data);
+            setError(data.error || "Something went wrong");
         }
     }
+
+    if (loading) {
+    return <p>Loading...</p>;
+}
 
     return (
     <div className="projects-page">
@@ -176,8 +188,10 @@ function Projects() {
                     Logout
                 </button>
             </div>
-
+           
+            
             <h2>Projects</h2>
+            {error && <p>{error}</p>}
 
             <ProjectForm onCreate={handleCreateProject} />
 
@@ -197,6 +211,7 @@ function Projects() {
         </div>
     </div>
 );
+
 }
 
 export default Projects;

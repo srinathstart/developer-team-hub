@@ -13,7 +13,12 @@ function ProjectForm({ onCreate }) {
 
     return (
         <form onSubmit={handleSubmit}>
+            <label htmlFor="project-name">
+              Project name
+            </label>
+            
             <input
+                id="project-name"
                 type="text"
                 placeholder="Project name"
                 value={name}
