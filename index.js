@@ -59,8 +59,7 @@ wss.on("connection", (socket) => {
 });
 
 const {
-    router: projectRouter,
-    loadProjects
+    router: projectRouter
 } = require("./routes/projects");
 
 app.use(express.json());
@@ -83,7 +82,6 @@ app.use("/projects", projectRouter);
 app.use(errorHandler);
 
 async function startServer() {
-    await loadProjects();
 
     server.listen(3000, () => {
         console.log("Server is running on port 3000");

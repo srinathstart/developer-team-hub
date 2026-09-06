@@ -1,135 +1,158 @@
 const express = require("express");
-const fs = require("fs").promises;
-const path = require("path");
 const adminOnly = require("../middleware/adminOnly");
+const pool = require("../db");
 
 
 const router = express.Router();
-
-const dataFile =
-    process.env.NODE_ENV === "test"
-        ? path.join(__dirname, "../data/projects.test.json")
-        : path.join(__dirname, "../data/projects.json");
         
 const projectEvents = require("../events/projectEvents");
 const auth = require("../middleware/auth");
 router.use(auth);
 
-let projects = [];
-let nextProjectId = 1;
-
-async function loadProjects() {
-    const fileData = await fs.readFile(dataFile, "utf-8");
-
-    projects = JSON.parse(fileData);
-
-    nextProjectId =
-        projects.length > 0
-            ? Math.max(...projects.map((project) => project.id)) + 1
-            : 1;
-}
-
-
 const validateProject = require("../middleware/validateProject");
 
+router.get("/", async (req, res) => {
+    try {
+        const result = await pool.query(
+            "SELECT * FROM projects ORDER BY id"
+        );
 
-async function saveProjects() {
-    await fs.writeFile(
-        dataFile,
-        JSON.stringify(projects, null, 2)
-    );
-}
+        res.json(result.rows);
+    } catch (error) {
+        console.error(error);
 
-
-
-router.get("/", (req, res) => {
-    res.json(projects);
-});
-
-router.get("/:id", (req, res) => {
-    const id = Number(req.params.id);
-
-    const project = projects.find(
-        (project) => project.id === id
-    );
-
-    if (!project) {
-        return res.status(404).json({
-            error: "Project not found"
+        res.status(500).json({
+            error: "Failed to load projects"
         });
     }
+});
 
-    res.json(project);
+router.get("/:id", async (req, res) => {
+    const id = Number(req.params.id);
+
+    try {
+        const result = await pool.query(
+            "SELECT * FROM projects WHERE id = $1",
+            [id]
+        );
+
+        const project = result.rows[0];
+
+        if (!project) {
+            return res.status(404).json({
+                error: "Project not found"
+            });
+        }
+
+        res.json(project);
+    } catch (error) {
+        console.error(error);
+
+        res.status(500).json({
+            error: "Failed to load project"
+        });
+    }
 });
 
 router.post("/", validateProject, async (req, res) => {
-    const project = req.body;
+    const { name } = req.body;
+    const userId = req.user.id;
 
-    const newProject = {
-        id: nextProjectId,
-        name: project.name
-    };
+    try {
+        const result = await pool.query(
+            `INSERT INTO projects (name, user_id)
+             VALUES ($1, $2)
+             RETURNING *`,
+            [name, userId]
+        );
 
-    nextProjectId++;
-    projects.push(newProject);
-    await saveProjects();
-    projectEvents.emit("projectCreated", newProject);
+        const newProject = result.rows[0];
 
-    res.status(201).json({
-        message: "Project created",
-        project: newProject
-    });
+        projectEvents.emit("projectCreated", newProject);
+
+        res.status(201).json({
+            message: "Project created",
+            project: newProject
+        });
+    } catch (error) {
+        console.error(error);
+
+        res.status(500).json({
+            error: "Failed to create project"
+        });
+    }
 });
 
 router.patch("/:id", validateProject, async (req, res) => {
     const id = Number(req.params.id);
-
-    const project = projects.find(
-        (project) => project.id === id
-    );
-
-    if (!project) {
-        return res.status(404).json({
-            error: "Project not found"
-        });
-    }
-
     const { name } = req.body;
 
-    project.name = name;
-    await saveProjects();
-    projectEvents.emit("projectUpdated", project);
+    try {
+        const result = await pool.query(
+            `UPDATE projects
+             SET name = $1
+             WHERE id = $2
+             RETURNING *`,
+            [name, id]
+        );
 
-    res.json({
-        message: "Project updated",
-        project
-    });
-});
+        const project = result.rows[0];
 
-router.delete("/:id", adminOnly,async (req, res) => {
-    const id = Number(req.params.id);
+        if (!project) {
+            return res.status(404).json({
+                error: "Project not found"
+            });
+        }
 
-    const projectIndex = projects.findIndex(
-        (project) => project.id === id
-    );
+        projectEvents.emit("projectUpdated", project);
 
-    if (projectIndex === -1) {
-        return res.status(404).json({
-            error: "Project not found"
+        res.json({
+            message: "Project updated",
+            project
+        });
+    } catch (error) {
+        console.error(error);
+
+        res.status(500).json({
+            error: "Failed to update project"
         });
     }
+});
 
-    const deletedProject = projects.splice(projectIndex, 1)[0];
-    await saveProjects();
-    projectEvents.emit("projectDeleted", deletedProject);
+router.delete("/:id", adminOnly, async (req, res) => {
+    const id = Number(req.params.id);
 
-    res.json({
-        message: "Project deleted",
-        project: deletedProject
-    });
+    try {
+        const result = await pool.query(
+            `DELETE FROM projects
+             WHERE id = $1
+             RETURNING *`,
+            [id]
+        );
+
+        const deletedProject = result.rows[0];
+
+        if (!deletedProject) {
+            return res.status(404).json({
+                error: "Project not found"
+            });
+        }
+
+        projectEvents.emit("projectDeleted", deletedProject);
+
+        res.json({
+            message: "Project deleted",
+            project: deletedProject
+        });
+    } catch (error) {
+        console.error(error);
+
+        res.status(500).json({
+            error: "Failed to delete project"
+        });
+    }
 });
 
 module.exports = {
-    router,
-    loadProjects
+    router
 };
