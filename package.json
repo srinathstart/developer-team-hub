@@ -4,8 +4,13 @@
   "main": "index.js",
   "scripts": {
     "start": "node index.js",
-    "test": "NODE_ENV=test jest"
+    "test": "NODE_ENV=test jest tests"
   },
+  "jest": {
+  "setupFilesAfterEnv": [
+    "<rootDir>/tests/setup.js"
+  ]
+},
   "author": "",
   "license": "ISC",
   "description": "",
@@ -22,4 +27,5 @@
     "jest": "^30.4.2",
     "supertest": "^7.2.2"
   }
+  
 }
