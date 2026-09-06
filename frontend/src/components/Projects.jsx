@@ -24,7 +24,7 @@ function Projects() {
 
 
             setError("");
-            const response = await fetch("http://localhost:3000/projects", {
+            const response = await fetch(`${import.meta.env.VITE_API_URL}/projects`, {
                 headers: {
                     Authorization: `Bearer ${token}`
                 }
@@ -46,7 +46,7 @@ function Projects() {
     }, [navigate]);
 
     useEffect(() => {
-        const socket = new WebSocket("ws://localhost:3000");
+        const socket = new WebSocket(import.meta.env.VITE_WS_URL);
 
         socket.onopen = () => {
             console.log("WebSocket connected");
@@ -99,7 +99,7 @@ function Projects() {
     const token = localStorage.getItem("token");
     setError("");
 
-    const response = await fetch("http://localhost:3000/projects", {
+    const response = await fetch(`${import.meta.env.VITE_API_URL}/projects`, {
         method: "POST",
         headers: {
             "Content-Type": "application/json",
@@ -131,7 +131,7 @@ function Projects() {
         setError("");
 
         const response = await fetch(
-            `http://localhost:3000/projects/${id}`,
+            `${import.meta.env.VITE_API_URL}/projects/${id}`,
             {
                 method: "PATCH",
                 headers: {
@@ -158,7 +158,7 @@ function Projects() {
         const token = localStorage.getItem("token");
         setError("");
         const response = await fetch(
-            `http://localhost:3000/projects/${id}`,
+            `${import.meta.env.VITE_API_URL}/projects/${id}`,
             {
                 method: "DELETE",
                 headers: {

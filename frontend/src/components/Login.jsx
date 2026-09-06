@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 
 function Login() {
     const navigate = useNavigate();
@@ -12,7 +12,7 @@ function Login() {
         e.preventDefault();
         setError("");
 
-        const response = await fetch("http://localhost:3000/auth/login", {
+        const response = await fetch(`${import.meta.env.VITE_API_URL}/auth/login`, {
             method: "POST",
             headers: {
                 "Content-Type": "application/json"
@@ -69,6 +69,10 @@ function Login() {
                         Login
                     </button>
                 </form>
+                <p>
+                    Don't have an account?{" "}
+                    <Link to="/register">Register</Link>
+                </p>
             </div>
         </div>
     );

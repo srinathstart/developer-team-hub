@@ -14,11 +14,34 @@ router.post("/register", async (req, res) => {
             error: "Username and password are required"
         });
     }
+    if (password.length < 8) {
+    return res.status(400).json({
+        error: "Password must be at least 8 characters"
+    });
+}
+
+if (!/[A-Z]/.test(password)) {
+    return res.status(400).json({
+        error: "Password must contain at least one uppercase letter"
+    });
+}
+
+if (!/[a-z]/.test(password)) {
+    return res.status(400).json({
+        error: "Password must contain at least one lowercase letter"
+    });
+}
+
+if (!/[0-9]/.test(password)) {
+    return res.status(400).json({
+        error: "Password must contain at least one number"
+    });
+}
 
     try {
         const hashedPassword = await bcrypt.hash(password, 10);
 
-        const role = username === "admin" ? "admin" : "user";
+        const role = "user";
 
         const result = await pool.query(
             `INSERT INTO users (username, password, role)
