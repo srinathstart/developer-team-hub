@@ -14,8 +14,11 @@ const validateProject = require("../middleware/validateProject");
 router.get("/", async (req, res) => {
     try {
         const result = await pool.query(
-            "SELECT * FROM projects ORDER BY id"
-        );
+    `SELECT * FROM projects
+     WHERE user_id = $1
+     ORDER BY id`,
+    [req.user.id]
+);
 
         res.json(result.rows);
     } catch (error) {
@@ -32,9 +35,11 @@ router.get("/:id", async (req, res) => {
 
     try {
         const result = await pool.query(
-            "SELECT * FROM projects WHERE id = $1",
-            [id]
-        );
+    `SELECT * FROM projects
+     WHERE id = $1
+     AND user_id = $2`,
+    [id, req.user.id]
+);
 
         const project = result.rows[0];
 
@@ -89,12 +94,13 @@ router.patch("/:id", validateProject, async (req, res) => {
 
     try {
         const result = await pool.query(
-            `UPDATE projects
-             SET name = $1
-             WHERE id = $2
-             RETURNING *`,
-            [name, id]
-        );
+    `UPDATE projects
+     SET name = $1
+     WHERE id = $2
+     AND user_id = $3
+     RETURNING *`,
+    [name, id, req.user.id]
+);
 
         const project = result.rows[0];
 
