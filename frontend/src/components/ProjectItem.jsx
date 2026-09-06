@@ -10,7 +10,8 @@ function ProjectItem({
     startEditing,
     handleEditProject,
     handleDeleteProject,
-    cancelEditing
+    cancelEditing,
+    handleViewTasks,
 }) {
     const isEditing = editingId === project.id;
 
@@ -73,6 +74,9 @@ function ProjectItem({
                     <p>
                         Status: {project.status}
                     </p>
+                    <button onClick={() => handleViewTasks(project.id)}>
+    View Tasks
+</button>
 
                     <button
                         onClick={() =>

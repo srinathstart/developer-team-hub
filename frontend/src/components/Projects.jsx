@@ -2,6 +2,9 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import ProjectForm from "./ProjectForm";
 import ProjectItem from "./ProjectItem";
+import TaskList from "./TaskList";
+import TaskForm from "./TaskForm";
+
 
 function Projects() {
     const [projects, setProjects] = useState([]);
@@ -10,6 +13,11 @@ function Projects() {
     const [editName, setEditName] = useState("");
     const [editDescription, setEditDescription] = useState("");
     const [editStatus, setEditStatus] = useState("planned");
+    const [selectedProjectId, setSelectedProjectId] = useState(null);
+    const [tasks, setTasks] = useState([]);
+    const [editingTaskId, setEditingTaskId] = useState(null);
+    const [editTaskTitle, setEditTaskTitle] = useState("");
+    const [editTaskStatus, setEditTaskStatus] = useState("todo");
 
     const navigate = useNavigate();
     const [loading, setLoading] = useState(true);
@@ -123,6 +131,19 @@ function Projects() {
         setEditDescription(project.description || "");
         setEditStatus(project.status || "planned");
     }
+
+    function startEditingTask(task) {
+    setEditingTaskId(task.id);
+    setEditTaskTitle(task.title);
+    setEditTaskStatus(task.status);
+}
+
+function cancelEditingTask() {
+    setEditingTaskId(null);
+    setEditTaskTitle("");
+    setEditTaskStatus("todo");
+}
+
     function cancelEditing() {
     setEditingId(null);
     setEditName("");
@@ -179,6 +200,117 @@ function Projects() {
             setError(data.error || "Something went wrong");
         }
     }
+    async function handleViewTasks(projectId) {
+    const token = localStorage.getItem("token");
+    setError("");
+
+    const response = await fetch(
+        `${import.meta.env.VITE_API_URL}/projects/${projectId}/tasks`,
+        {
+            headers: {
+                Authorization: `Bearer ${token}`
+            }
+        }
+    );
+
+    const data = await response.json();
+
+    if (response.ok) {
+        setSelectedProjectId(projectId);
+        setTasks(data);
+    } else {
+        setError(data.error || "Failed to load tasks");
+    }
+}
+
+async function handleCreateTask(taskData) {
+    const token = localStorage.getItem("token");
+    setError("");
+
+    const response = await fetch(
+        `${import.meta.env.VITE_API_URL}/projects/${selectedProjectId}/tasks`,
+        {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${token}`
+            },
+            body: JSON.stringify(taskData)
+        }
+    );
+
+    const data = await response.json();
+
+    if (response.ok) {
+        setTasks((currentTasks) => [
+            data.task,
+            ...currentTasks
+        ]);
+    } else {
+        setError(data.error || "Failed to create task");
+    }
+}
+
+async function handleEditTask(id) {
+    const token = localStorage.getItem("token");
+    setError("");
+
+    const response = await fetch(
+        `${import.meta.env.VITE_API_URL}/tasks/${id}`,
+        {
+            method: "PATCH",
+            headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${token}`
+            },
+            body: JSON.stringify({
+                title: editTaskTitle,
+                status: editTaskStatus
+            })
+        }
+    );
+
+    const data = await response.json();
+
+    if (response.ok) {
+        setTasks((currentTasks) =>
+            currentTasks.map((task) =>
+                task.id === data.task.id
+                    ? data.task
+                    : task
+            )
+        );
+
+        cancelEditingTask();
+    } else {
+        setError(data.error || "Failed to update task");
+    }
+}
+
+async function handleDeleteTask(id) {
+    const token = localStorage.getItem("token");
+    setError("");
+
+    const response = await fetch(
+        `${import.meta.env.VITE_API_URL}/tasks/${id}`,
+        {
+            method: "DELETE",
+            headers: {
+                Authorization: `Bearer ${token}`
+            }
+        }
+    );
+
+    const data = await response.json();
+
+    if (response.ok) {
+        setTasks((currentTasks) =>
+            currentTasks.filter((task) => task.id !== id)
+        );
+    } else {
+        setError(data.error || "Failed to delete task");
+    }
+}
 
     if (loading) {
     return <p>Loading...</p>;
@@ -202,21 +334,41 @@ function Projects() {
             <ProjectForm onCreate={handleCreateProject} />
 
             {projects.map((project) => (
-                <ProjectItem
-                    key={project.id}
-                    project={project}
-                    editingId={editingId}
-                    editName={editName}
-                    setEditName={setEditName}
-                    editDescription={editDescription}
-                    setEditDescription={setEditDescription}
-                    editStatus={editStatus}
-                    setEditStatus={setEditStatus}
-                    startEditing={startEditing}
-                    handleEditProject={handleEditProject}
-                    handleDeleteProject={handleDeleteProject}
-                    cancelEditing={cancelEditing}
-                />
+    <div key={project.id}>
+        <ProjectItem
+            project={project}
+            editingId={editingId}
+            editName={editName}
+            setEditName={setEditName}
+            editDescription={editDescription}
+            setEditDescription={setEditDescription}
+            editStatus={editStatus}
+            setEditStatus={setEditStatus}
+            startEditing={startEditing}
+            handleEditProject={handleEditProject}
+            handleDeleteProject={handleDeleteProject}
+            cancelEditing={cancelEditing}
+            handleViewTasks={handleViewTasks}
+        />
+
+        {selectedProjectId === project.id && (
+    <>
+        <TaskForm onCreateTask={handleCreateTask} />
+        <TaskList
+    tasks={tasks}
+    editingTaskId={editingTaskId}
+    editTaskTitle={editTaskTitle}
+    setEditTaskTitle={setEditTaskTitle}
+    editTaskStatus={editTaskStatus}
+    setEditTaskStatus={setEditTaskStatus}
+    startEditingTask={startEditingTask}
+    handleEditTask={handleEditTask}
+    cancelEditingTask={cancelEditingTask}
+    handleDeleteTask={handleDeleteTask}
+/>
+    </>
+)}
+    </div>
             ))}
         </div>
     </div>

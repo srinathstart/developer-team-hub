@@ -3,6 +3,7 @@ const http =require("http");
 const WebSocket =require("ws");
 const cors = require("cors");
 require("dotenv").config();
+const taskRouter = require("./routes/tasks");
 
 const logger = require("./middleware/logger");
 const errorHandler = require("./middleware/errorHandler");
@@ -78,6 +79,7 @@ app.get("/health", (req, res) => {
 });
 
 app.use("/projects", projectRouter);
+app.use("/", taskRouter);
 
 app.use(errorHandler);
 
