@@ -3,6 +3,10 @@ function ProjectItem({
     editingId,
     editName,
     setEditName,
+    editDescription,
+    setEditDescription,
+    editStatus,
+    setEditStatus,
     startEditing,
     handleEditProject,
     handleDeleteProject,
@@ -20,8 +24,36 @@ function ProjectItem({
                         onChange={(e) => setEditName(e.target.value)}
                     />
 
+                    <textarea
+                        value={editDescription}
+                        onChange={(e) =>
+                            setEditDescription(e.target.value)
+                        }
+                    />
+
+                    <select
+                        value={editStatus}
+                        onChange={(e) =>
+                            setEditStatus(e.target.value)
+                        }
+                    >
+                        <option value="planned">
+                            Planned
+                        </option>
+
+                        <option value="in-progress">
+                            In Progress
+                        </option>
+
+                        <option value="completed">
+                            Completed
+                        </option>
+                    </select>
+
                     <button
-                        onClick={() => handleEditProject(project.id)}
+                        onClick={() =>
+                            handleEditProject(project.id)
+                        }
                     >
                         Save
                     </button>
@@ -32,14 +64,28 @@ function ProjectItem({
                 </>
             ) : (
                 <>
-                    <span>{project.name}</span>
+                    <h3>{project.name}</h3>
 
-                    <button onClick={() => startEditing(project)}>
+                    <p>
+                        {project.description}
+                    </p>
+
+                    <p>
+                        Status: {project.status}
+                    </p>
+
+                    <button
+                        onClick={() =>
+                            startEditing(project)
+                        }
+                    >
                         Edit
                     </button>
 
                     <button
-                        onClick={() => handleDeleteProject(project.id)}
+                        onClick={() =>
+                            handleDeleteProject(project.id)
+                        }
                     >
                         Delete
                     </button>

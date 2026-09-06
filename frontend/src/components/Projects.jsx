@@ -8,6 +8,8 @@ function Projects() {
 
     const [editingId, setEditingId] = useState(null);
     const [editName, setEditName] = useState("");
+    const [editDescription, setEditDescription] = useState("");
+    const [editStatus, setEditStatus] = useState("planned");
 
     const navigate = useNavigate();
     const [loading, setLoading] = useState(true);
@@ -95,7 +97,7 @@ function Projects() {
         navigate("/login");
     }
 
-    async function handleCreateProject(name) {
+    async function handleCreateProject(projectData) {
     const token = localStorage.getItem("token");
     setError("");
 
@@ -105,9 +107,7 @@ function Projects() {
             "Content-Type": "application/json",
             Authorization: `Bearer ${token}`
         },
-        body: JSON.stringify({
-            name
-        })
+        body: JSON.stringify(projectData)
     });
 
     const data = await response.json();
@@ -120,10 +120,14 @@ function Projects() {
     function startEditing(project) {
         setEditingId(project.id);
         setEditName(project.name);
+        setEditDescription(project.description || "");
+        setEditStatus(project.status || "planned");
     }
     function cancelEditing() {
     setEditingId(null);
     setEditName("");
+    setEditDescription("");
+    setEditStatus("planned");
 }
 
     async function handleEditProject(id) {
@@ -139,7 +143,9 @@ function Projects() {
                     Authorization: `Bearer ${token}`
                 },
                 body: JSON.stringify({
-                    name: editName
+                    name: editName,
+                    description: editDescription,
+                    status: editStatus
                 })
             }
         );
@@ -202,6 +208,10 @@ function Projects() {
                     editingId={editingId}
                     editName={editName}
                     setEditName={setEditName}
+                    editDescription={editDescription}
+                    setEditDescription={setEditDescription}
+                    editStatus={editStatus}
+                    setEditStatus={setEditStatus}
                     startEditing={startEditing}
                     handleEditProject={handleEditProject}
                     handleDeleteProject={handleDeleteProject}

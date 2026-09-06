@@ -7,7 +7,7 @@ describe("Auth routes", () => {
             .post("/auth/register")
             .send({
                 username: "testuser",
-                password: "test123"
+                password: "Test1234"
             });
 
         expect(response.statusCode).toBe(201);
@@ -19,14 +19,14 @@ describe("Auth routes", () => {
         .post("/auth/register")
         .send({
             username: "loginuser",
-            password: "test123"
+            password: "Test1234"
         });
 
     const response = await request(app)
         .post("/auth/login")
         .send({
             username: "loginuser",
-            password: "test123"
+            password: "Test1234"
         });
 
     expect(response.statusCode).toBe(200);

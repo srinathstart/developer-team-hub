@@ -13,12 +13,21 @@ const validateProject = require("../middleware/validateProject");
 
 router.get("/", async (req, res) => {
     try {
-        const result = await pool.query(
-    `SELECT * FROM projects
-     WHERE user_id = $1
-     ORDER BY created_at DESC`,
-    [req.user.id]
-);
+        let result;
+
+if (req.user.role === "admin") {
+    result = await pool.query(
+        `SELECT * FROM projects
+         ORDER BY created_at DESC`
+    );
+} else {
+    result = await pool.query(
+        `SELECT * FROM projects
+         WHERE user_id = $1
+         ORDER BY created_at DESC`,
+        [req.user.id]
+    );
+}
 
         res.json(result.rows);
     } catch (error) {
@@ -60,16 +69,16 @@ router.get("/:id", async (req, res) => {
 });
 
 router.post("/", validateProject, async (req, res) => {
-    const { name } = req.body;
+    const { name, description, status } = req.body;
     const userId = req.user.id;
 
     try {
         const result = await pool.query(
-            `INSERT INTO projects (name, user_id)
-             VALUES ($1, $2)
-             RETURNING *`,
-            [name, userId]
-        );
+    `INSERT INTO projects (name, description, status, user_id)
+     VALUES ($1, $2, $3, $4)
+     RETURNING *`,
+    [name, description, status, userId]
+);
 
         const newProject = result.rows[0];
 
@@ -89,17 +98,19 @@ router.post("/", validateProject, async (req, res) => {
 });
 
 router.patch("/:id", validateProject, async (req, res) => {
-    const id = Number(req.params.id);
-    const { name } = req.body;
+    const { id } = req.params;
+    const { name, description, status } = req.body;
 
     try {
         const result = await pool.query(
     `UPDATE projects
-     SET name = $1
-     WHERE id = $2
-     AND user_id = $3
+     SET name = $1,
+         description = $2,
+         status = $3
+     WHERE id = $4
+     AND user_id = $5
      RETURNING *`,
-    [name, id, req.user.id]
+    [name, description, status, id, req.user.id]
 );
 
         const project = result.rows[0];
