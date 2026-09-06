@@ -10,6 +10,7 @@ const errorHandler = require("./middleware/errorHandler");
 const projectListeners = require("./events/projectListeners");
 const projectEvents = require("./events/projectEvents");
 const authRouter = require("./routes/auth");
+const memberRouter = require("./routes/members");
 
 
 const app = express();
@@ -66,6 +67,7 @@ const {
 app.use(express.json());
 app.use(logger);
 app.use("/auth", authRouter);
+app.use("/", memberRouter);
 
 
 app.get("/", (req, res) => {

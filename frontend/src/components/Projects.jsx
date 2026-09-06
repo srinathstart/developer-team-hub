@@ -4,6 +4,8 @@ import ProjectForm from "./ProjectForm";
 import ProjectItem from "./ProjectItem";
 import TaskList from "./TaskList";
 import TaskForm from "./TaskForm";
+import MemberList from "./MemberList";
+import MemberForm from "./MemberForm";
 
 
 function Projects() {
@@ -18,6 +20,8 @@ function Projects() {
     const [editingTaskId, setEditingTaskId] = useState(null);
     const [editTaskTitle, setEditTaskTitle] = useState("");
     const [editTaskStatus, setEditTaskStatus] = useState("todo");
+    const [selectedMembersProjectId, setSelectedMembersProjectId] = useState(null);
+    const [members, setMembers] = useState([]);
 
     const navigate = useNavigate();
     const [loading, setLoading] = useState(true);
@@ -312,6 +316,79 @@ async function handleDeleteTask(id) {
     }
 }
 
+async function handleViewMembers(projectId) {
+    const token = localStorage.getItem("token");
+    setError("");
+
+    const response = await fetch(
+        `${import.meta.env.VITE_API_URL}/projects/${projectId}/members`,
+        {
+            headers: {
+                Authorization: `Bearer ${token}`
+            }
+        }
+    );
+
+    const data = await response.json();
+
+    if (response.ok) {
+        setSelectedMembersProjectId(projectId);
+        setMembers(data);
+    } else {
+        setError(data.error || "Failed to load members");
+    }
+}
+
+async function handleAddMember(userId) {
+    const token = localStorage.getItem("token");
+    setError("");
+
+    const response = await fetch(
+        `${import.meta.env.VITE_API_URL}/projects/${selectedMembersProjectId}/members`,
+        {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${token}`
+            },
+            body: JSON.stringify({
+                userId: Number(userId)
+            })
+        }
+    );
+
+    const data = await response.json();
+
+    if (response.ok) {
+        await handleViewMembers(selectedMembersProjectId);
+    } else {
+        setError(data.error || "Failed to add member");
+    }
+}
+
+async function handleRemoveMember(userId) {
+    const token = localStorage.getItem("token");
+    setError("");
+
+    const response = await fetch(
+        `${import.meta.env.VITE_API_URL}/projects/${selectedMembersProjectId}/members/${userId}`,
+        {
+            method: "DELETE",
+            headers: {
+                Authorization: `Bearer ${token}`
+            }
+        }
+    );
+
+    const data = await response.json();
+
+    if (response.ok) {
+        await handleViewMembers(selectedMembersProjectId);
+    } else {
+        setError(data.error || "Failed to remove member");
+    }
+}
+
     if (loading) {
     return <p>Loading...</p>;
 }
@@ -349,6 +426,7 @@ async function handleDeleteTask(id) {
             handleDeleteProject={handleDeleteProject}
             cancelEditing={cancelEditing}
             handleViewTasks={handleViewTasks}
+            handleViewMembers={handleViewMembers}
         />
 
         {selectedProjectId === project.id && (
@@ -365,6 +443,15 @@ async function handleDeleteTask(id) {
     handleEditTask={handleEditTask}
     cancelEditingTask={cancelEditingTask}
     handleDeleteTask={handleDeleteTask}
+/>
+    </>
+)}
+{selectedMembersProjectId === project.id && (
+    <>
+        <MemberForm onAddMember={handleAddMember} />
+        <MemberList
+    members={members}
+    handleRemoveMember={handleRemoveMember}
 />
     </>
 )}

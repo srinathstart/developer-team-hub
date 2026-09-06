@@ -12,6 +12,7 @@ function ProjectItem({
     handleDeleteProject,
     cancelEditing,
     handleViewTasks,
+    handleViewMembers
 }) {
     const isEditing = editingId === project.id;
 
@@ -76,6 +77,9 @@ function ProjectItem({
                     </p>
                     <button onClick={() => handleViewTasks(project.id)}>
     View Tasks
+</button>
+<button onClick={() => handleViewMembers(project.id)}>
+    View Members
 </button>
 
                     <button
