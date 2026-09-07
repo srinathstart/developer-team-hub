@@ -1,19 +1,28 @@
 import { useState } from "react";
 
-function TaskForm({ onCreateTask }) {
+function TaskForm({ onCreateTask, members }) {
     const [title, setTitle] = useState("");
     const [status, setStatus] = useState("todo");
+    const [priority, setPriority] = useState("medium");
+    const [assigneeUsername, setAssigneeUsername] = useState("");
+    const [dueDate, setDueDate] = useState("");
 
     async function handleSubmit(e) {
         e.preventDefault();
 
         await onCreateTask({
             title,
-            status
+            status,
+            priority,
+            assigneeUsername: assigneeUsername || null,
+            due_date: dueDate || null
         });
 
         setTitle("");
         setStatus("todo");
+        setPriority("medium");
+        setAssigneeUsername("");
+        setDueDate("");
     }
 
     return (
@@ -37,6 +46,40 @@ function TaskForm({ onCreateTask }) {
             <option value="in-progress">In Progress</option>
             <option value="done">Done</option>
         </select>
+
+        <select
+            className="select-input"
+            id="task-priority"
+            aria-label="Task priority"
+            value={priority}
+            onChange={(e) => setPriority(e.target.value)}
+        >
+            <option value="low">Low priority</option>
+            <option value="medium">Medium priority</option>
+            <option value="high">High priority</option>
+        </select>
+
+        <select
+            className="select-input"
+            aria-label="Task assignee"
+            value={assigneeUsername}
+            onChange={(e) => setAssigneeUsername(e.target.value)}
+        >
+            <option value="">Unassigned</option>
+            {members.map((member) => (
+                <option key={member.id} value={member.username}>
+                    {member.username}
+                </option>
+            ))}
+        </select>
+
+        <input
+            className="text-input task-date-input"
+            type="date"
+            aria-label="Task due date"
+            value={dueDate}
+            onChange={(e) => setDueDate(e.target.value)}
+        />
 
         <button className="btn-primary" type="submit">
             Add Task

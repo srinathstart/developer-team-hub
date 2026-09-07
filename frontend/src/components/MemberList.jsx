@@ -2,7 +2,9 @@ import { Trash2, User } from "lucide-react";
 
 function MemberList({
     members,
-    handleRemoveMember
+    handleRemoveMember,
+    handleUpdateMemberRole,
+    canManage
 }) {
     return (
         <div className="member-section">
@@ -32,15 +34,40 @@ function MemberList({
                             </span>
                         </div>
 
-                        <button
-                            className="mini-btn danger"
-                            onClick={() =>
-                                handleRemoveMember(member.id)
-                            }
-                            title="Remove member"
-                        >
-                            <Trash2 size={13} />
-                        </button>
+                        <div className="member-row-actions">
+                            {canManage ? (
+                                <select
+                                    className="member-role-select"
+                                    aria-label={`Role for ${member.username}`}
+                                    value={member.role}
+                                    onChange={(e) =>
+                                        handleUpdateMemberRole(
+                                            member.id,
+                                            e.target.value
+                                        )
+                                    }
+                                >
+                                    <option value="viewer">Viewer</option>
+                                    <option value="editor">Editor</option>
+                                </select>
+                            ) : (
+                                <span className={`member-role ${member.role}`}>
+                                    {member.role}
+                                </span>
+                            )}
+
+                            {canManage && (
+                                <button
+                                    className="mini-btn danger"
+                                    onClick={() =>
+                                        handleRemoveMember(member.id)
+                                    }
+                                    title="Remove member"
+                                >
+                                    <Trash2 size={13} />
+                                </button>
+                            )}
+                        </div>
                     </div>
                 ))}
             </div>

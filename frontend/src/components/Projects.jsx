@@ -4,14 +4,39 @@ import ProjectForm from "./ProjectForm";
 import ProjectItem from "./ProjectItem";
 import TaskList from "./TaskList";
 import TaskForm from "./TaskForm";
+import TaskFilters from "./TaskFilters";
 import MemberList from "./MemberList";
 import MemberForm from "./MemberForm";
+import ActivityList from "./ActivityList";
+import DashboardStats from "./DashboardStats";
 import {
     Search,
     LogOut,
     Plus,
     ChevronDown
 } from "lucide-react";
+
+function getCurrentUser() {
+    const token = localStorage.getItem("token");
+
+    if (!token) {
+        return null;
+    }
+
+    try {
+        const payload = token.split(".")[1]
+            .replace(/-/g, "+")
+            .replace(/_/g, "/");
+        const normalizedPayload = payload.padEnd(
+            Math.ceil(payload.length / 4) * 4,
+            "="
+        );
+
+        return JSON.parse(atob(normalizedPayload));
+    } catch {
+        return null;
+    }
+}
 
 
 function Projects() {
@@ -21,20 +46,34 @@ function Projects() {
     const [editName, setEditName] = useState("");
     const [editDescription, setEditDescription] = useState("");
     const [editStatus, setEditStatus] = useState("planned");
+    const [editDueDate, setEditDueDate] = useState("");
     const [selectedProjectId, setSelectedProjectId] = useState(null);
     const [tasks, setTasks] = useState([]);
+    const [taskAssignees, setTaskAssignees] = useState([]);
+    const [taskPriorityFilter, setTaskPriorityFilter] = useState("all");
+    const [taskStatusFilter, setTaskStatusFilter] = useState("all");
+    const [projectTaskRoles, setProjectTaskRoles] = useState({});
     const [editingTaskId, setEditingTaskId] = useState(null);
     const [editTaskTitle, setEditTaskTitle] = useState("");
     const [editTaskStatus, setEditTaskStatus] = useState("todo");
+    const [editTaskPriority, setEditTaskPriority] = useState("medium");
+    const [editTaskAssignee, setEditTaskAssignee] = useState("");
+    const [editTaskDueDate, setEditTaskDueDate] = useState("");
     const [selectedMembersProjectId, setSelectedMembersProjectId] = useState(null);
     const [members, setMembers] = useState([]);
+    const [selectedActivityProjectId, setSelectedActivityProjectId] = useState(null);
+    const [activities, setActivities] = useState([]);
+    const [activityLoading, setActivityLoading] = useState(false);
     const [searchTerm, setSearchTerm] = useState("");
     const [statusFilter, setStatusFilter] = useState("all");
+    const [sortOrder, setSortOrder] = useState("newest");
     const [showNewProject, setShowNewProject] = useState(false);
+    const [statsRefreshKey, setStatsRefreshKey] = useState(0);
 
     const navigate = useNavigate();
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
+    const currentUser = getCurrentUser();
 
     useEffect(() => {
         async function getProjects() {
@@ -46,30 +85,56 @@ function Projects() {
             }
 
 
-            setError("");
-            const response = await fetch(`${import.meta.env.VITE_API_URL}/projects`, {
-                headers: {
-                    Authorization: `Bearer ${token}`
-                }
-            });
+            const params = new URLSearchParams({ sort: sortOrder });
 
-            const data = await response.json();
-            
-
-            if (response.ok) {
-                setProjects(data);
-            } else {
-                localStorage.removeItem("token");
-                navigate("/login");
+            if (statusFilter !== "all") {
+                params.set("status", statusFilter);
             }
-            setLoading(false);
+
+            setError("");
+            setLoading(true);
+
+            try {
+                const response = await fetch(
+                    `${import.meta.env.VITE_API_URL}/projects?${params.toString()}`,
+                    {
+                        headers: {
+                            Authorization: `Bearer ${token}`
+                        }
+                    }
+                );
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    setProjects(data);
+                } else if (response.status === 401) {
+                    localStorage.removeItem("token");
+                    navigate("/login");
+                } else {
+                    setError(data.error || "Failed to load projects");
+                }
+            } catch {
+                setError("Failed to load projects");
+            } finally {
+                setLoading(false);
+            }
         }
 
         getProjects();
-    }, [navigate]);
+    }, [navigate, sortOrder, statusFilter]);
 
     useEffect(() => {
-        const socket = new WebSocket(import.meta.env.VITE_WS_URL);
+        const token = localStorage.getItem("token");
+
+        if (!token) {
+            return undefined;
+        }
+
+        const socketUrl = new URL(import.meta.env.VITE_WS_URL);
+        socketUrl.searchParams.set("token", token);
+
+        const socket = new WebSocket(socketUrl.toString());
 
         socket.onopen = () => {
             console.log("WebSocket connected");
@@ -79,23 +144,41 @@ function Projects() {
     const message = JSON.parse(event.data);
 
     if (message.type === "projectCreated") {
-        setProjects((currentProjects) => [
-            ...currentProjects,
-            message.project
-        ]);
+        setStatsRefreshKey((current) => current + 1);
+        const isVisibleToUser =
+            currentUser?.role === "admin" ||
+            Number(message.project.user_id) === Number(currentUser?.id);
+        const matchesStatus =
+            statusFilter === "all" ||
+            message.project.status === statusFilter;
+
+        if (isVisibleToUser && matchesStatus) {
+            setProjects((currentProjects) =>
+                sortOrder === "oldest"
+                    ? [...currentProjects, message.project]
+                    : [message.project, ...currentProjects]
+            );
+        }
     }
 
     if (message.type === "projectUpdated") {
+        setStatsRefreshKey((current) => current + 1);
         setProjects((currentProjects) =>
-            currentProjects.map((project) =>
-                project.id === message.project.id
-                    ? message.project
-                    : project
-            )
+            currentProjects
+                .map((project) =>
+                    project.id === message.project.id
+                        ? message.project
+                        : project
+                )
+                .filter((project) =>
+                    statusFilter === "all" ||
+                    project.status === statusFilter
+                )
         );
     }
 
     if (message.type === "projectDeleted") {
+        setStatsRefreshKey((current) => current + 1);
         setProjects((currentProjects) =>
             currentProjects.filter(
                 (project) => project.id !== message.project.id
@@ -111,7 +194,7 @@ function Projects() {
         return () => {
             socket.close();
         };
-    }, []);
+    }, [currentUser?.id, currentUser?.role, sortOrder, statusFilter]);
 
     function handleLogout() {
         localStorage.removeItem("token");
@@ -135,6 +218,7 @@ function Projects() {
 
     if (response.ok) {
     setShowNewProject(false);
+    setStatsRefreshKey((current) => current + 1);
 } else {
     setError(data.error || "Something went wrong");
 }
@@ -145,18 +229,25 @@ function Projects() {
         setEditName(project.name);
         setEditDescription(project.description || "");
         setEditStatus(project.status || "planned");
+        setEditDueDate(project.due_date || "");
     }
 
     function startEditingTask(task) {
     setEditingTaskId(task.id);
     setEditTaskTitle(task.title);
     setEditTaskStatus(task.status);
+    setEditTaskPriority(task.priority || "medium");
+    setEditTaskAssignee(task.assignee_username || "");
+    setEditTaskDueDate(task.due_date || "");
 }
 
 function cancelEditingTask() {
     setEditingTaskId(null);
     setEditTaskTitle("");
     setEditTaskStatus("todo");
+    setEditTaskPriority("medium");
+    setEditTaskAssignee("");
+    setEditTaskDueDate("");
 }
 
     function cancelEditing() {
@@ -164,6 +255,7 @@ function cancelEditingTask() {
     setEditName("");
     setEditDescription("");
     setEditStatus("planned");
+    setEditDueDate("");
 }
 
     async function handleEditProject(id) {
@@ -181,7 +273,8 @@ function cancelEditingTask() {
                 body: JSON.stringify({
                     name: editName,
                     description: editDescription,
-                    status: editStatus
+                    status: editStatus,
+                    due_date: editDueDate || null
                 })
             }
         );
@@ -191,6 +284,10 @@ function cancelEditingTask() {
         if (response.ok) {
             setEditingId(null);
             setEditName("");
+            setEditDescription("");
+            setEditStatus("planned");
+            setEditDueDate("");
+            setStatsRefreshKey((current) => current + 1);
         } else {
             setError(data.error || "Something went wrong");
         }
@@ -213,6 +310,8 @@ function cancelEditingTask() {
 
         if (!response.ok) {
             setError(data.error || "Something went wrong");
+        } else {
+            setStatsRefreshKey((current) => current + 1);
         }
     }
     
@@ -220,6 +319,9 @@ async function handleViewTasks(projectId) {
     if (selectedProjectId === projectId) {
         setSelectedProjectId(null);
         setTasks([]);
+        setTaskAssignees([]);
+        setTaskPriorityFilter("all");
+        setTaskStatusFilter("all");
         return;
     }
 
@@ -240,8 +342,89 @@ async function handleViewTasks(projectId) {
     if (response.ok) {
         setSelectedProjectId(projectId);
         setTasks(data);
+        setTaskPriorityFilter("all");
+        setTaskStatusFilter("all");
+
+        const project = projects.find(
+            (currentProject) => currentProject.id === projectId
+        );
+
+        const membersResponse = await fetch(
+            `${import.meta.env.VITE_API_URL}/projects/${projectId}/members`,
+            {
+                headers: {
+                    Authorization: `Bearer ${token}`
+                }
+            }
+        );
+
+        const projectMembers = membersResponse.ok
+            ? await membersResponse.json()
+            : [];
+
+        setTaskAssignees(projectMembers);
+
+        if (Number(project?.user_id) === Number(currentUser?.id)) {
+            setProjectTaskRoles((currentRoles) => ({
+                ...currentRoles,
+                [projectId]: "owner"
+            }));
+        } else if (membersResponse.ok) {
+            const currentMembership = projectMembers.find(
+                (member) => Number(member.id) === Number(currentUser?.id)
+            );
+
+            setProjectTaskRoles((currentRoles) => ({
+                ...currentRoles,
+                [projectId]: currentMembership?.role || "viewer"
+            }));
+        } else {
+            setProjectTaskRoles((currentRoles) => ({
+                ...currentRoles,
+                [projectId]: "viewer"
+            }));
+        }
     } else {
         setError(data.error || "Failed to load tasks");
+    }
+}
+
+async function handleTaskFilterChange(priority, status) {
+    const token = localStorage.getItem("token");
+    const params = new URLSearchParams();
+
+    if (priority !== "all") {
+        params.set("priority", priority);
+    }
+
+    if (status !== "all") {
+        params.set("status", status);
+    }
+
+    setTaskPriorityFilter(priority);
+    setTaskStatusFilter(status);
+    setError("");
+
+    try {
+        const query = params.toString();
+        const response = await fetch(
+            `${import.meta.env.VITE_API_URL}/projects/${selectedProjectId}/tasks${query ? `?${query}` : ""}`,
+            {
+                headers: {
+                    Authorization: `Bearer ${token}`
+                }
+            }
+        );
+
+        const data = await response.json();
+
+        if (response.ok) {
+            setTasks(data);
+        } else {
+            setError(data.error || "Failed to filter tasks");
+        }
+    } catch {
+        setError("Failed to filter tasks");
     }
 }
 
@@ -264,10 +447,20 @@ async function handleCreateTask(taskData) {
     const data = await response.json();
 
     if (response.ok) {
-        setTasks((currentTasks) => [
-            data.task,
-            ...currentTasks
-        ]);
+        const matchesPriority =
+            taskPriorityFilter === "all" ||
+            data.task.priority === taskPriorityFilter;
+        const matchesStatus =
+            taskStatusFilter === "all" ||
+            data.task.status === taskStatusFilter;
+
+        if (matchesPriority && matchesStatus) {
+            setTasks((currentTasks) => [
+                data.task,
+                ...currentTasks
+            ]);
+        }
+        setStatsRefreshKey((current) => current + 1);
     } else {
         setError(data.error || "Failed to create task");
     }
@@ -287,7 +480,10 @@ async function handleEditTask(id) {
             },
             body: JSON.stringify({
                 title: editTaskTitle,
-                status: editTaskStatus
+                status: editTaskStatus,
+                priority: editTaskPriority,
+                assigneeUsername: editTaskAssignee || null,
+                due_date: editTaskDueDate || null
             })
         }
     );
@@ -300,10 +496,16 @@ async function handleEditTask(id) {
                 task.id === data.task.id
                     ? data.task
                     : task
+            ).filter((task) =>
+                (taskPriorityFilter === "all" ||
+                    task.priority === taskPriorityFilter) &&
+                (taskStatusFilter === "all" ||
+                    task.status === taskStatusFilter)
             )
         );
 
         cancelEditingTask();
+        setStatsRefreshKey((current) => current + 1);
     } else {
         setError(data.error || "Failed to update task");
     }
@@ -329,18 +531,13 @@ async function handleDeleteTask(id) {
         setTasks((currentTasks) =>
             currentTasks.filter((task) => task.id !== id)
         );
+        setStatsRefreshKey((current) => current + 1);
     } else {
         setError(data.error || "Failed to delete task");
     }
 }
 
-async function handleViewMembers(projectId) {
-    if (selectedMembersProjectId === projectId) {
-        setSelectedMembersProjectId(null);
-        setMembers([]);
-        return;
-    }
-
+async function loadMembers(projectId) {
     const token = localStorage.getItem("token");
     setError("");
 
@@ -363,7 +560,17 @@ async function handleViewMembers(projectId) {
     }
 }
 
-async function handleAddMember(userId) {
+async function handleViewMembers(projectId) {
+    if (selectedMembersProjectId === projectId) {
+        setSelectedMembersProjectId(null);
+        setMembers([]);
+        return;
+    }
+
+    await loadMembers(projectId);
+}
+
+async function handleAddMember(username, role) {
     const token = localStorage.getItem("token");
     setError("");
 
@@ -376,7 +583,8 @@ async function handleAddMember(userId) {
                 Authorization: `Bearer ${token}`
             },
             body: JSON.stringify({
-                userId: Number(userId)
+                username,
+                role
             })
         }
     );
@@ -384,7 +592,7 @@ async function handleAddMember(userId) {
     const data = await response.json();
 
     if (response.ok) {
-        await handleViewMembers(selectedMembersProjectId);
+        await loadMembers(selectedMembersProjectId);
     } else {
         setError(data.error || "Failed to add member");
     }
@@ -407,21 +615,77 @@ async function handleRemoveMember(userId) {
     const data = await response.json();
 
     if (response.ok) {
-        await handleViewMembers(selectedMembersProjectId);
+        await loadMembers(selectedMembersProjectId);
     } else {
         setError(data.error || "Failed to remove member");
     }
 }
+
+async function handleUpdateMemberRole(userId, role) {
+    const token = localStorage.getItem("token");
+    setError("");
+
+    const response = await fetch(
+        `${import.meta.env.VITE_API_URL}/projects/${selectedMembersProjectId}/members/${userId}`,
+        {
+            method: "PATCH",
+            headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${token}`
+            },
+            body: JSON.stringify({ role })
+        }
+    );
+
+    const data = await response.json();
+
+    if (response.ok) {
+        await loadMembers(selectedMembersProjectId);
+    } else {
+        setError(data.error || "Failed to update member role");
+    }
+}
+
+async function handleViewActivity(projectId) {
+    if (selectedActivityProjectId === projectId) {
+        setSelectedActivityProjectId(null);
+        setActivities([]);
+        return;
+    }
+
+    const token = localStorage.getItem("token");
+    setError("");
+    setSelectedActivityProjectId(projectId);
+    setActivities([]);
+    setActivityLoading(true);
+
+    try {
+        const response = await fetch(
+            `${import.meta.env.VITE_API_URL}/projects/${projectId}/activity`,
+            {
+                headers: {
+                    Authorization: `Bearer ${token}`
+                }
+            }
+        );
+
+        const data = await response.json();
+
+        if (response.ok) {
+            setActivities(data);
+        } else {
+            setError(data.error || "Failed to load activity");
+        }
+    } catch {
+        setError("Failed to load activity");
+    } finally {
+        setActivityLoading(false);
+    }
+}
 const filteredProjects = projects.filter((project) => {
-    const matchesSearch = project.name
+    return project.name
         .toLowerCase()
         .includes(searchTerm.toLowerCase());
-
-    const matchesStatus =
-        statusFilter === "all" ||
-        project.status === statusFilter;
-
-    return matchesSearch && matchesStatus;
 });
 
 
@@ -453,7 +717,7 @@ const filteredProjects = projects.filter((project) => {
         </header>
 
         <main className="hub-body">
-           
+            <DashboardStats refreshKey={statsRefreshKey} />
             
             <div className="toolbar">
     <button
@@ -498,6 +762,20 @@ const filteredProjects = projects.filter((project) => {
 
         <ChevronDown size={14} />
     </div>
+
+    <div className="select-wrap">
+        <select
+            className="select-input"
+            aria-label="Sort projects"
+            value={sortOrder}
+            onChange={(e) => setSortOrder(e.target.value)}
+        >
+            <option value="newest">Newest</option>
+            <option value="oldest">Oldest</option>
+        </select>
+
+        <ChevronDown size={14} />
+    </div>
 </div>
 
             {error && <p>{error}</p>}
@@ -513,10 +791,17 @@ const filteredProjects = projects.filter((project) => {
     <p>No projects found</p>
 )}
             <div className="project-grid">
-    {filteredProjects.map((project) => (
+    {filteredProjects.map((project) => {
+        const taskRole = projectTaskRoles[project.id];
+        const canEditTasks =
+            taskRole === "owner" || taskRole === "editor";
+
+        return (
      <div className="project-wrapper" key={project.id}>
         <ProjectItem
             project={project}
+            currentUserId={currentUser?.id}
+            currentUserRole={currentUser?.role}
             editingId={editingId}
             editName={editName}
             setEditName={setEditName}
@@ -524,17 +809,34 @@ const filteredProjects = projects.filter((project) => {
             setEditDescription={setEditDescription}
             editStatus={editStatus}
             setEditStatus={setEditStatus}
+            editDueDate={editDueDate}
+            setEditDueDate={setEditDueDate}
             startEditing={startEditing}
             handleEditProject={handleEditProject}
             handleDeleteProject={handleDeleteProject}
             cancelEditing={cancelEditing}
             handleViewTasks={handleViewTasks}
             handleViewMembers={handleViewMembers}
+            handleViewActivity={handleViewActivity}
         />
 
         {selectedProjectId === project.id && (
     <>
-        <TaskForm onCreateTask={handleCreateTask} />
+        {canEditTasks ? (
+            <TaskForm
+                onCreateTask={handleCreateTask}
+                members={taskAssignees}
+            />
+        ) : (
+            <p className="permission-note">
+                View-only access — viewers cannot add, edit, or delete tasks.
+            </p>
+        )}
+        <TaskFilters
+            priority={taskPriorityFilter}
+            status={taskStatusFilter}
+            onChange={handleTaskFilterChange}
+        />
         <TaskList
     tasks={tasks}
     editingTaskId={editingTaskId}
@@ -542,24 +844,43 @@ const filteredProjects = projects.filter((project) => {
     setEditTaskTitle={setEditTaskTitle}
     editTaskStatus={editTaskStatus}
     setEditTaskStatus={setEditTaskStatus}
+    editTaskPriority={editTaskPriority}
+    setEditTaskPriority={setEditTaskPriority}
+    editTaskAssignee={editTaskAssignee}
+    setEditTaskAssignee={setEditTaskAssignee}
+    editTaskDueDate={editTaskDueDate}
+    setEditTaskDueDate={setEditTaskDueDate}
+    members={taskAssignees}
     startEditingTask={startEditingTask}
     handleEditTask={handleEditTask}
     cancelEditingTask={cancelEditingTask}
     handleDeleteTask={handleDeleteTask}
+    canEdit={canEditTasks}
 />
     </>
 )}
 {selectedMembersProjectId === project.id && (
     <>
-        <MemberForm onAddMember={handleAddMember} />
+        {Number(project.user_id) === Number(currentUser?.id) && (
+            <MemberForm onAddMember={handleAddMember} />
+        )}
         <MemberList
     members={members}
     handleRemoveMember={handleRemoveMember}
+    handleUpdateMemberRole={handleUpdateMemberRole}
+    canManage={Number(project.user_id) === Number(currentUser?.id)}
 />
     </>
 )}
+{selectedActivityProjectId === project.id && (
+    <ActivityList
+        activities={activities}
+        loading={activityLoading}
+    />
+)}
     </div>
-            ))}
+        );
+    })}
             </div>
             </main>
     </div>

@@ -7,13 +7,38 @@ const router = express.Router();
 const pool = require("../db");
 
 router.post("/register", async (req, res) => {
-    const { username, password } = req.body;
+    const { username, password } = req.body || {};
 
-    if (!username || !password) {
+    if (
+        username === undefined ||
+        username === null ||
+        username === "" ||
+        password === undefined ||
+        password === null ||
+        password === ""
+    ) {
         return res.status(400).json({
             error: "Username and password are required"
         });
     }
+
+    if (
+        typeof username !== "string" ||
+        typeof password !== "string"
+    ) {
+        return res.status(400).json({
+            error: "Username and password must be strings"
+        });
+    }
+
+    const normalizedUsername = username.trim();
+
+    if (!normalizedUsername) {
+        return res.status(400).json({
+            error: "Username is required"
+        });
+    }
+
     if (password.length < 8) {
     return res.status(400).json({
         error: "Password must be at least 8 characters"
@@ -47,7 +72,7 @@ if (!/[0-9]/.test(password)) {
             `INSERT INTO users (username, password, role)
              VALUES ($1, $2, $3)
              RETURNING id, username, role`,
-            [username, hashedPassword, role]
+            [normalizedUsername, hashedPassword, role]
         );
 
         const newUser = result.rows[0];
@@ -76,13 +101,43 @@ if (!/[0-9]/.test(password)) {
 });
 
 router.post("/login", async (req, res) => {
-    const { username, password } = req.body;
+    const { username, password } = req.body || {};
+
+    if (
+        username === undefined ||
+        username === null ||
+        username === "" ||
+        password === undefined ||
+        password === null ||
+        password === ""
+    ) {
+        return res.status(400).json({
+            error: "Username and password are required"
+        });
+    }
+
+    if (
+        typeof username !== "string" ||
+        typeof password !== "string"
+    ) {
+        return res.status(400).json({
+            error: "Username and password must be strings"
+        });
+    }
+
+    const normalizedUsername = username.trim();
+
+    if (!normalizedUsername) {
+        return res.status(400).json({
+            error: "Username is required"
+        });
+    }
 
     try {
         const result = await pool.query(
             `SELECT * FROM users
              WHERE username = $1`,
-            [username]
+            [normalizedUsername]
         );
 
         const user = result.rows[0];

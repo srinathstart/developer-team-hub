@@ -1,12 +1,15 @@
 import {
     ListChecks,
     Users,
+    History,
     Pencil,
     Trash2
 } from "lucide-react";
 
 function ProjectItem({
     project,
+    currentUserId,
+    currentUserRole,
     editingId,
     editName,
     setEditName,
@@ -14,14 +17,19 @@ function ProjectItem({
     setEditDescription,
     editStatus,
     setEditStatus,
+    editDueDate,
+    setEditDueDate,
     startEditing,
     handleEditProject,
     handleDeleteProject,
     cancelEditing,
     handleViewTasks,
-    handleViewMembers
+    handleViewMembers,
+    handleViewActivity
 }) {
     const isEditing = editingId === project.id;
+    const isOwner = Number(project.user_id) === Number(currentUserId);
+    const isAdmin = currentUserRole === "admin";
 
     function getStatusClass(status) {
         if (status === "completed") {
@@ -33,6 +41,34 @@ function ProjectItem({
         }
 
         return "status-badge planned";
+    }
+
+    function formatDueDate(date) {
+        const [year, month, day] = date.split("-").map(Number);
+
+        return new Date(year, month - 1, day).toLocaleDateString(
+            undefined,
+            {
+                month: "short",
+                day: "numeric",
+                year: "numeric"
+            }
+        );
+    }
+
+    function isOverdue() {
+        if (!project.due_date || project.status === "completed") {
+            return false;
+        }
+
+        const today = new Date();
+        const localToday = [
+            today.getFullYear(),
+            String(today.getMonth() + 1).padStart(2, "0"),
+            String(today.getDate()).padStart(2, "0")
+        ].join("-");
+
+        return project.due_date < localToday;
     }
 
     return (
@@ -76,6 +112,22 @@ function ProjectItem({
                         </option>
                     </select>
 
+                    <div className="field">
+                        <label className="field-label" htmlFor={`edit-due-date-${project.id}`}>
+                            Due date
+                        </label>
+
+                        <input
+                            className="text-input"
+                            id={`edit-due-date-${project.id}`}
+                            type="date"
+                            value={editDueDate}
+                            onChange={(e) =>
+                                setEditDueDate(e.target.value)
+                            }
+                        />
+                    </div>
+
                     <div className="panel-actions">
                         <button
                             className="btn-secondary"
@@ -106,8 +158,18 @@ function ProjectItem({
                         </span>
                     </div>
 
+                    <span className={isOwner ? "ownership-tag owned" : "ownership-tag shared"}>
+                        {isOwner ? "Owned by you" : "Shared project"}
+                    </span>
+
                     <p className="card-desc">
                         {project.description}
+                    </p>
+
+                    <p className={isOverdue() ? "card-due overdue" : "card-due"}>
+                        {project.due_date
+                            ? `${isOverdue() ? "Overdue" : "Due"} ${formatDueDate(project.due_date)}`
+                            : "No due date"}
                     </p>
 
                     <div className="card-actions">
@@ -134,22 +196,36 @@ function ProjectItem({
                         <button
                             className="icon-btn"
                             onClick={() =>
-                                startEditing(project)
+                                handleViewActivity(project.id)
                             }
                         >
-                            <Pencil size={14} />
-                            Edit
+                            <History size={14} />
+                            Activity
                         </button>
 
-                        <button
-                            className="icon-btn danger"
-                            onClick={() =>
-                                handleDeleteProject(project.id)
-                            }
-                        >
-                            <Trash2 size={14} />
-                            Delete
-                        </button>
+                        {isOwner && (
+                            <button
+                                className="icon-btn"
+                                onClick={() =>
+                                    startEditing(project)
+                                }
+                            >
+                                <Pencil size={14} />
+                                Edit
+                            </button>
+                        )}
+
+                        {(isOwner || isAdmin) && (
+                            <button
+                                className="icon-btn danger"
+                                onClick={() =>
+                                    handleDeleteProject(project.id)
+                                }
+                            >
+                                <Trash2 size={14} />
+                                Delete
+                            </button>
+                        )}
                     </div>
                 </>
             )}

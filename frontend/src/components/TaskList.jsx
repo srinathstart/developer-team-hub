@@ -12,10 +12,18 @@ function TaskList({
     setEditTaskTitle,
     editTaskStatus,
     setEditTaskStatus,
+    editTaskPriority,
+    setEditTaskPriority,
+    editTaskAssignee,
+    setEditTaskAssignee,
+    editTaskDueDate,
+    setEditTaskDueDate,
+    members,
     startEditingTask,
     handleEditTask,
     cancelEditingTask,
-    handleDeleteTask
+    handleDeleteTask,
+    canEdit
 }) {
     function getTaskStatusClass(status) {
         if (status === "done") {
@@ -27,6 +35,46 @@ function TaskList({
         }
 
         return "task-status todo";
+    }
+
+    function getTaskPriorityClass(priority) {
+        if (priority === "high") {
+            return "task-priority high";
+        }
+
+        if (priority === "low") {
+            return "task-priority low";
+        }
+
+        return "task-priority medium";
+    }
+
+    function formatDueDate(date) {
+        const [year, month, day] = date.split("-").map(Number);
+
+        return new Date(year, month - 1, day).toLocaleDateString(
+            undefined,
+            {
+                month: "short",
+                day: "numeric",
+                year: "numeric"
+            }
+        );
+    }
+
+    function isTaskOverdue(task) {
+        if (!task.due_date || task.status === "done") {
+            return false;
+        }
+
+        const today = new Date();
+        const localToday = [
+            today.getFullYear(),
+            String(today.getMonth() + 1).padStart(2, "0"),
+            String(today.getDate()).padStart(2, "0")
+        ].join("-");
+
+        return task.due_date < localToday;
     }
 
     return (
@@ -48,7 +96,7 @@ function TaskList({
 
                     return (
                         <div
-                            className="task-row"
+                            className={`task-row${isEditing ? " editing" : ""}`}
                             key={task.id}
                         >
                             {isEditing ? (
@@ -86,9 +134,52 @@ function TaskList({
                                         </option>
                                     </select>
 
+                                    <input
+                                        className="text-input task-date-input"
+                                        type="date"
+                                        aria-label="Task due date"
+                                        value={editTaskDueDate}
+                                        onChange={(e) =>
+                                            setEditTaskDueDate(e.target.value)
+                                        }
+                                    />
+
+                                    <select
+                                        className="select-input"
+                                        aria-label="Task assignee"
+                                        value={editTaskAssignee}
+                                        onChange={(e) =>
+                                            setEditTaskAssignee(e.target.value)
+                                        }
+                                    >
+                                        <option value="">Unassigned</option>
+                                        {members.map((member) => (
+                                            <option key={member.id} value={member.username}>
+                                                {member.username}
+                                            </option>
+                                        ))}
+                                    </select>
+
+                                    <select
+                                        className="select-input"
+                                        aria-label="Task priority"
+                                        value={editTaskPriority}
+                                        onChange={(e) =>
+                                            setEditTaskPriority(
+                                                e.target.value
+                                            )
+                                        }
+                                    >
+                                        <option value="low">Low</option>
+                                        <option value="medium">Medium</option>
+                                        <option value="high">High</option>
+                                    </select>
+
+                                    {canEdit && (
                                     <div className="task-row-actions">
                                         <button
                                             className="mini-btn"
+                                            type="button"
                                             onClick={() =>
                                                 handleEditTask(
                                                     task.id
@@ -101,6 +192,7 @@ function TaskList({
 
                                         <button
                                             className="mini-btn"
+                                            type="button"
                                             onClick={cancelEditingTask}
                                             title="Cancel"
                                         >
@@ -109,6 +201,7 @@ function TaskList({
 
                                         <button
                                             className="mini-btn danger"
+                                            type="button"
                                             onClick={() =>
                                                 handleDeleteTask(
                                                     task.id
@@ -119,6 +212,7 @@ function TaskList({
                                             <Trash2 size={13} />
                                         </button>
                                     </div>
+                                    )}
                                 </>
                             ) : (
                                 <>
@@ -134,11 +228,33 @@ function TaskList({
                                         >
                                             {task.status}
                                         </span>
+
+                                        <span
+                                            className={getTaskPriorityClass(
+                                                task.priority
+                                            )}
+                                        >
+                                            {task.priority || "medium"}
+                                        </span>
+
+                                        <span className="task-assignee">
+                                            {task.assignee_username
+                                                ? `Assigned to ${task.assignee_username}`
+                                                : "Unassigned"}
+                                        </span>
+
+                                        <span className={isTaskOverdue(task) ? "task-due overdue" : "task-due"}>
+                                            {task.due_date
+                                                ? `${isTaskOverdue(task) ? "Overdue" : "Due"} ${formatDueDate(task.due_date)}`
+                                                : "No due date"}
+                                        </span>
                                     </div>
 
+                                    {canEdit && (
                                     <div className="task-row-actions">
                                         <button
                                             className="mini-btn"
+                                            type="button"
                                             onClick={() =>
                                                 startEditingTask(
                                                     task
@@ -151,6 +267,7 @@ function TaskList({
 
                                         <button
                                             className="mini-btn danger"
+                                            type="button"
                                             onClick={() =>
                                                 handleDeleteTask(
                                                     task.id
@@ -161,6 +278,7 @@ function TaskList({
                                             <Trash2 size={13} />
                                         </button>
                                     </div>
+                                    )}
                                 </>
                             )}
                         </div>

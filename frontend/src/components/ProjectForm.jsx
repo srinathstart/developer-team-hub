@@ -4,6 +4,7 @@ function ProjectForm({ onCreate, onCancel }) {
     const [name, setName] = useState("");
     const [description, setDescription] = useState("");
     const [status, setStatus] = useState("planned");
+    const [dueDate, setDueDate] = useState("");
 
     async function handleSubmit(e) {
         e.preventDefault();
@@ -11,12 +12,14 @@ function ProjectForm({ onCreate, onCancel }) {
         await onCreate({
             name,
             description,
-            status
+            status,
+            due_date: dueDate || null
         });
 
         setName("");
         setDescription("");
         setStatus("planned");
+        setDueDate("");
     }
 
     return (
@@ -52,6 +55,20 @@ function ProjectForm({ onCreate, onCancel }) {
                     <option value="in-progress">In Progress</option>
                     <option value="completed">Completed</option>
                 </select>
+            </div>
+
+            <div className="field">
+                <label className="field-label" htmlFor="project-due-date">
+                    Due date
+                </label>
+
+                <input
+                    className="text-input"
+                    id="project-due-date"
+                    type="date"
+                    value={dueDate}
+                    onChange={(e) => setDueDate(e.target.value)}
+                />
             </div>
         </div>
 

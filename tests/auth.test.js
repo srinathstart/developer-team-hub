@@ -82,4 +82,99 @@ describe("Auth routes", () => {
         expect(response.body.error)
             .toBe("Invalid username or password");
     });
+
+    test("POST /auth/register should reject missing credentials", async () => {
+        const response = await request(app)
+            .post("/auth/register")
+            .send({ username: "missingpassword" });
+
+        expect(response.statusCode).toBe(400);
+        expect(response.body.error)
+            .toBe("Username and password are required");
+    });
+
+    test("POST /auth/register should reject non-string credentials", async () => {
+        const response = await request(app)
+            .post("/auth/register")
+            .send({
+                username: 123,
+                password: ["Test1234"]
+            });
+
+        expect(response.statusCode).toBe(400);
+        expect(response.body.error)
+            .toBe("Username and password must be strings");
+    });
+
+    test("POST /auth/register should reject a whitespace-only username", async () => {
+        const response = await request(app)
+            .post("/auth/register")
+            .send({
+                username: "   ",
+                password: "Test1234"
+            });
+
+        expect(response.statusCode).toBe(400);
+        expect(response.body.error).toBe("Username is required");
+    });
+
+    test("POST /auth/register should trim the username", async () => {
+        const response = await request(app)
+            .post("/auth/register")
+            .send({
+                username: "  trimmeduser  ",
+                password: "Test1234"
+            });
+
+        expect(response.statusCode).toBe(201);
+        expect(response.body.user.username).toBe("trimmeduser");
+    });
+
+    test("POST /auth/login should reject missing credentials", async () => {
+        const response = await request(app)
+            .post("/auth/login")
+            .send({ password: "Test1234" });
+
+        expect(response.statusCode).toBe(400);
+        expect(response.body.error)
+            .toBe("Username and password are required");
+    });
+
+    test("POST /auth/login should reject non-string credentials", async () => {
+        const response = await request(app)
+            .post("/auth/login")
+            .send({ username: ["loginuser"], password: 12345678 });
+
+        expect(response.statusCode).toBe(400);
+        expect(response.body.error)
+            .toBe("Username and password must be strings");
+    });
+
+    test("POST /auth/login should reject a whitespace-only username", async () => {
+        const response = await request(app)
+            .post("/auth/login")
+            .send({ username: "   ", password: "Test1234" });
+
+        expect(response.statusCode).toBe(400);
+        expect(response.body.error).toBe("Username is required");
+    });
+
+    test("POST /auth/login should trim the username", async () => {
+        await request(app)
+            .post("/auth/register")
+            .send({
+                username: "spacedlogin",
+                password: "Test1234"
+            });
+
+        const response = await request(app)
+            .post("/auth/login")
+            .send({
+                username: "  spacedlogin  ",
+                password: "Test1234"
+            });
+
+        expect(response.statusCode).toBe(200);
+        expect(response.body.token).toBeDefined();
+    });
 });

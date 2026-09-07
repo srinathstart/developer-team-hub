@@ -1,16 +1,19 @@
 const express = require("express");
 const http =require("http");
-const WebSocket =require("ws");
 const cors = require("cors");
 require("dotenv").config();
 const taskRouter = require("./routes/tasks");
 
 const logger = require("./middleware/logger");
 const errorHandler = require("./middleware/errorHandler");
-const projectListeners = require("./events/projectListeners");
 const projectEvents = require("./events/projectEvents");
+const {
+    createProjectWebSocketServer
+} = require("./websocket");
 const authRouter = require("./routes/auth");
 const memberRouter = require("./routes/members");
+const activityRouter = require("./routes/activity");
+const dashboardRouter = require("./routes/dashboard");
 
 
 const app = express();
@@ -22,43 +25,7 @@ app.use(cors({
 
 const server = http.createServer(app);
 
-const wss = new WebSocket.Server({ server });   
-
-function broadcast(data) {
-    const message = JSON.stringify(data);
-
-    wss.clients.forEach((client) => {
-        if (client.readyState === WebSocket.OPEN) {
-            client.send(message);
-        }
-    });
-}
-
-projectEvents.on("projectCreated", (project) => {
-    broadcast({
-        type: "projectCreated",
-        project
-    });
-});
-
-projectEvents.on("projectUpdated", (project) => {
-    broadcast({
-        type: "projectUpdated",
-        project
-    });
-});
-
-projectEvents.on("projectDeleted", (project) => {
-    broadcast({
-        type: "projectDeleted",
-        project
-    });
-});
-
-
-wss.on("connection", (socket) => {
-    console.log("WebSocket client connected");
-});
+createProjectWebSocketServer(server, projectEvents);
 
 const {
     router: projectRouter
@@ -82,13 +49,25 @@ app.get("/health", (req, res) => {
 app.use("/", memberRouter);
 app.use("/projects", projectRouter);
 app.use("/", taskRouter);
+app.use("/", activityRouter);
+app.use("/dashboard", dashboardRouter);
 
 app.use(errorHandler);
 
 async function startServer() {
+    const configuredPort = process.env.PORT || "3000";
+    const port = Number(configuredPort);
 
-    server.listen(3000, () => {
-        console.log("Server is running on port 3000");
+    if (
+        !Number.isInteger(port) ||
+        port < 1 ||
+        port > 65535
+    ) {
+        throw new Error("PORT must be a number between 1 and 65535");
+    }
+
+    server.listen(port, () => {
+        console.log(`Server is running on port ${port}`);
     });
 }
 

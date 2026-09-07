@@ -1,0 +1,4 @@
+ALTER TABLE tasks
+ADD COLUMN IF NOT EXISTS assigned_to integer
+REFERENCES users(id)
+ON DELETE SET NULL;

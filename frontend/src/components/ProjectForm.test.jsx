@@ -34,6 +34,7 @@ test("submits the project name", async () => {
     expect(onCreate).toHaveBeenCalledWith({
     name: "My Project",
     description: "",
-    status: "planned"
+    status: "planned",
+    due_date: null
 });    
 });

@@ -27,7 +27,8 @@ function projectData(name = "Test Project") {
     return {
         name,
         description: "Test project description",
-        status: "planned"
+        status: "planned",
+        due_date: "2026-10-15"
     };
 }
 
@@ -55,6 +56,9 @@ describe("Project routes", () => {
         expect(response.body.project.status)
             .toBe("planned");
 
+        expect(response.body.project.due_date)
+            .toBe("2026-10-15");
+
         expect(response.body.project.id)
             .toBeDefined();
     });
@@ -80,6 +84,29 @@ describe("Project routes", () => {
         expect(response.body.error)
             .toBe("Invalid project status");
     });
+
+    test("POST /projects should reject invalid due date", async () => {
+    const token =
+        await registerAndLogin("invaliddateuser");
+
+    const response = await request(app)
+        .post("/projects")
+        .set(
+            "Authorization",
+            `Bearer ${token}`
+        )
+        .send({
+            name: "Invalid Date Project",
+            description: "Testing due date validation",
+            status: "planned",
+            due_date: "12/01/2026"
+        });
+
+    expect(response.statusCode).toBe(400);
+
+    expect(response.body.error)
+        .toBe("Invalid due date");
+});
 
     test("GET /projects should return only user's projects", async () => {
         const userOneToken =
@@ -118,6 +145,68 @@ describe("Project routes", () => {
             .toBe("User One Project");
     });
 
+    test("project member should see shared project", async () => {
+    const ownerToken =
+        await registerAndLogin("sharedowner");
+
+    const memberToken =
+        await registerAndLogin("sharedmember");
+
+    const createResponse = await request(app)
+        .post("/projects")
+        .set(
+            "Authorization",
+            `Bearer ${ownerToken}`
+        )
+        .send(projectData("Shared Project"));
+
+    const projectId =
+        createResponse.body.project.id;
+
+    const memberResult = await pool.query(
+        `SELECT id FROM users
+         WHERE username = $1`,
+        ["sharedmember"]
+    );
+
+    const memberId =
+        memberResult.rows[0].id;
+
+    await pool.query(
+        `INSERT INTO project_members
+         (project_id, user_id)
+         VALUES ($1, $2)`,
+        [projectId, memberId]
+    );
+
+    const listResponse = await request(app)
+        .get("/projects")
+        .set(
+            "Authorization",
+            `Bearer ${memberToken}`
+        );
+
+    expect(listResponse.statusCode).toBe(200);
+
+    expect(
+        listResponse.body.some(
+            project => project.id === projectId
+        )
+    ).toBe(true);
+
+    const singleResponse = await request(app)
+        .get(`/projects/${projectId}`)
+        .set(
+            "Authorization",
+            `Bearer ${memberToken}`
+        );
+
+    expect(singleResponse.statusCode).toBe(200);
+
+    expect(singleResponse.body.name)
+        .toBe("Shared Project");
+});
+
     test("PATCH /projects/:id should update own project", async () => {
         const token =
             await registerAndLogin("editor");
@@ -142,13 +231,17 @@ describe("Project routes", () => {
             .send({
                 name: "Updated Project",
                 description: "Updated description",
-                status: "in-progress"
+                status: "in-progress",
+                due_date: "2026-12-01"
             });
 
         expect(response.statusCode).toBe(200);
 
         expect(response.body.project.name)
             .toBe("Updated Project");
+
+        expect(response.body.project.due_date)
+            .toBe("2026-12-01");
 
         expect(response.body.project.description)
             .toBe("Updated description");
@@ -157,7 +250,7 @@ describe("Project routes", () => {
             .toBe("in-progress");
     });
 
-    test("DELETE /projects/:id should return 403 for normal user", async () => {
+    test("DELETE /projects/:id should allow the project owner", async () => {
         const token =
             await registerAndLogin("normaluser");
 
@@ -181,10 +274,33 @@ describe("Project routes", () => {
                 `Bearer ${token}`
             );
 
-        expect(response.statusCode).toBe(403);
+        expect(response.statusCode).toBe(200);
+        expect(response.body.message).toBe("Project deleted");
+    });
 
-        expect(response.body.error)
-            .toBe("Admin access required");
+    test("DELETE /projects/:id should reject another user", async () => {
+        const ownerToken =
+            await registerAndLogin("deleteowner");
+        const otherToken =
+            await registerAndLogin("deleteoutsider");
+
+        const createResponse = await request(app)
+            .post("/projects")
+            .set(
+                "Authorization",
+                `Bearer ${ownerToken}`
+            )
+            .send(projectData("Owner Project"));
+
+        const response = await request(app)
+            .delete(`/projects/${createResponse.body.project.id}`)
+            .set(
+                "Authorization",
+                `Bearer ${otherToken}`
+            );
+
+        expect(response.statusCode).toBe(404);
+        expect(response.body.error).toBe("Project not found");
     });
 
     test("DELETE /projects/:id should work for admin", async () => {
@@ -240,6 +356,112 @@ describe("Project routes", () => {
         expect(response.body.project.id)
             .toBe(projectId);
     });
+    test("GET /projects should filter by status", async () => {
+    const token =
+        await registerAndLogin("filteruser");
+
+    await request(app)
+        .post("/projects")
+        .set(
+            "Authorization",
+            `Bearer ${token}`
+        )
+        .send({
+            name: "Planned Project",
+            description: "Planned",
+            status: "planned"
+        });
+
+    await request(app)
+        .post("/projects")
+        .set(
+            "Authorization",
+            `Bearer ${token}`
+        )
+        .send({
+            name: "Completed Project",
+            description: "Completed",
+            status: "completed"
+        });
+
+    const response = await request(app)
+        .get("/projects?status=planned")
+        .set(
+            "Authorization",
+            `Bearer ${token}`
+        );
+
+    expect(response.statusCode).toBe(200);
+    expect(response.body.length).toBe(1);
+
+    expect(response.body[0].name)
+        .toBe("Planned Project");
+});
+
+test("GET /projects should reject invalid status filter", async () => {
+    const token =
+        await registerAndLogin("badfilteruser");
+
+    const response = await request(app)
+        .get("/projects?status=wrong")
+        .set(
+            "Authorization",
+            `Bearer ${token}`
+        );
+
+    expect(response.statusCode).toBe(400);
+
+    expect(response.body.error)
+        .toBe("Invalid project status filter");
+});
+
+test("GET /projects should sort oldest first", async () => {
+    const token =
+        await registerAndLogin("sortuser");
+
+    await request(app)
+        .post("/projects")
+        .set(
+            "Authorization",
+            `Bearer ${token}`
+        )
+        .send({
+            name: "First Project",
+            description: "Created first",
+            status: "planned"
+        });
+
+    await new Promise(resolve =>
+        setTimeout(resolve, 20)
+    );
+
+    await request(app)
+        .post("/projects")
+        .set(
+            "Authorization",
+            `Bearer ${token}`
+        )
+        .send({
+            name: "Second Project",
+            description: "Created second",
+            status: "planned"
+        });
+
+    const response = await request(app)
+        .get("/projects?sort=oldest")
+        .set(
+            "Authorization",
+            `Bearer ${token}`
+        );
+
+    expect(response.statusCode).toBe(200);
+
+    expect(response.body[0].name)
+        .toBe("First Project");
+
+    expect(response.body[1].name)
+        .toBe("Second Project");
+});
 
     test("admin should see all projects", async () => {
         const normalToken =

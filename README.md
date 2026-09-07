@@ -1,115 +1,162 @@
 # Developer Team Hub
 
-Developer Team Hub is a full-stack learning capstone built with **React, Node.js, and Express**.
+Developer Team Hub is my first full-stack learning project. It is a small project-management application built to practise how a React frontend, a Node.js API, and a PostgreSQL database work together.
 
-It demonstrates how a frontend and backend work together through authentication, protected routes, CRUD operations, real-time WebSocket updates, file persistence, middleware, events, and automated testing.
+Users can create projects, invite registered users as members, assign roles and tasks, track deadlines, and see changes in real time.
 
 ## Features
 
-### Frontend
-- React frontend built with Vite
-- React Router
-- Login form
-- JWT stored in browser `localStorage`
-- Protected `/projects` page
-- Create, edit, and delete projects
-- Logout
-- Real-time WebSocket project updates
-- Reusable React components
-- Basic responsive styling
+### Accounts and security
 
-### Backend
-- Express REST API
-- JWT authentication
-- bcrypt password hashing
-- Role-based authorization
-- Project CRUD
-- Custom middleware
-- Request validation
-- JSON file persistence with `fs`
-- Node.js `EventEmitter`
-- Activity logging
-- WebSocket broadcasting
-- Environment variables with dotenv
-- Graceful shutdown
-- Jest + Supertest integration tests
-- Separate test data and test logs
+- Register and log in with a username and password
+- Passwords are hashed with bcrypt
+- Protected API routes use JSON Web Tokens (JWT)
+- Usernames are trimmed and authentication input is validated
+- Authenticated WebSocket connections
+- Project events are sent only to the project owner, its members, and administrators
+
+### Projects
+
+- Create, view, edit, and delete projects
+- Project statuses: `planned`, `in-progress`, and `completed`
+- Optional project due dates
+- Search projects by name
+- Filter projects by status
+- Sort projects from newest or oldest
+- Owners can delete their own projects; administrators can delete any project
+
+### Members and permissions
+
+- Add an existing registered user by username
+- Assign `viewer` or `editor` roles
+- Change a member's role
+- Remove a member
+- Removing a member automatically unassigns their tasks in that project
+- Viewers can view project tasks
+- Editors can create, edit, and delete tasks
+- Project owners manage the project and its members
+
+### Tasks
+
+- Create, view, edit, and delete tasks
+- Task statuses: `todo`, `in-progress`, and `done`
+- Priorities: `low`, `medium`, and `high`
+- Optional due dates
+- Assign a task to the project owner or a project member by username
+- Filter tasks by status and priority
+
+### Dashboard and activity
+
+- Project and task statistics
+- Planned, in-progress, and completed project totals
+- Shared-project, completed-task, and overdue-task totals
+- Project activity history for project, task, and member changes
+- Real-time project creation, update, and deletion events
 
 ## Tech Stack
 
 ### Frontend
-- React
+
+- React 19
 - Vite
 - React Router
-- JavaScript
-- HTML
-- CSS
+- Lucide React icons
+- JavaScript and CSS
 
 ### Backend
+
 - Node.js
 - Express
+- PostgreSQL with `pg`
 - bcrypt
-- jsonwebtoken
-- ws
+- JSON Web Tokens
+- `ws` WebSockets
 - dotenv
-- cors
+- CORS
+- Node.js `EventEmitter`
 
-### Testing
-- Jest
-- Supertest
+### Existing automated checks
 
-### Storage
-- JSON files for project data
-- In-memory storage for users
+- Jest and Supertest for the backend
+- Vitest and Testing Library dependencies in the frontend
+- ESLint and Vite production builds
 
 ## Project Structure
 
 ```text
 developer-team-hub/
-├── data/
-│   ├── projects.json
-│   └── projects.test.json
 ├── events/
-│   ├── projectEvents.js
-│   └── projectListeners.js
-├── logs/
-│   ├── activity.log
-│   └── activity.test.log
+│   └── projectEvents.js
 ├── middleware/
-│   ├── adminOnly.js
 │   ├── auth.js
 │   ├── errorHandler.js
 │   ├── logger.js
 │   └── validateProject.js
+├── migrations/
+│   ├── 001_add_task_assignee.sql
+│   ├── 002_add_task_due_date.sql
+│   └── 003_expand_activity_action.sql
 ├── routes/
+│   ├── activity.js
 │   ├── auth.js
-│   └── projects.js
+│   ├── dashboard.js
+│   ├── members.js
+│   ├── projects.js
+│   └── tasks.js
 ├── tests/
+│   ├── activity.test.js
 │   ├── auth.test.js
+│   ├── dashboard.test.js
 │   ├── health.test.js
-│   └── projects.test.js
+│   ├── members.test.js
+│   ├── projects.test.js
+│   ├── tasks.test.js
+│   └── websocket.test.js
 ├── utils/
 │   └── activityLogger.js
 ├── frontend/
 │   ├── src/
 │   │   ├── components/
+│   │   │   ├── ActivityList.jsx
+│   │   │   ├── DashboardStats.jsx
 │   │   │   ├── Login.jsx
-│   │   │   ├── Projects.jsx
+│   │   │   ├── MemberForm.jsx
+│   │   │   ├── MemberList.jsx
 │   │   │   ├── ProjectForm.jsx
-│   │   │   └── ProjectItem.jsx
+│   │   │   ├── ProjectItem.jsx
+│   │   │   ├── Projects.jsx
+│   │   │   ├── Register.jsx
+│   │   │   ├── TaskFilters.jsx
+│   │   │   ├── TaskForm.jsx
+│   │   │   └── TaskList.jsx
 │   │   ├── App.jsx
 │   │   └── App.css
+│   ├── .env.example
 │   └── package.json
-├── index.js
-├── ws-client.js
-├── package.json
 ├── .env.example
+├── db.js
+├── index.js
+├── schema.sql
+├── websocket.js
+├── package.json
 └── README.md
 ```
 
+The old `data/` and `logs/` files are leftovers from an earlier learning stage. The current application stores users, projects, members, tasks, and activity records in PostgreSQL.
+
+## Prerequisites
+
+Install these before starting:
+
+- Node.js
+- npm
+- PostgreSQL
+
+The installed Vite version expects Node.js `20.19+` or `22.12+`.
+
 ## Installation
 
-Clone the repository:
+Clone the repository and enter it:
 
 ```bash
 git clone https://github.com/srinathstart/developer-team-hub.git
@@ -130,27 +177,70 @@ npm install
 cd ..
 ```
 
-## Environment Variables
+## Database Setup
 
-Create a `.env` file in the project root.
+Create the development database:
+
+```bash
+createdb developer_team_hub
+```
+
+Create all current tables from the baseline schema:
+
+```bash
+psql -d developer_team_hub -f schema.sql
+```
+
+`schema.sql` is intended for a new, empty database. The files in `migrations/` document changes that were added to an older database during development; do not run them after `schema.sql`, because the baseline already includes those columns.
+
+## Backend Environment Variables
+
+Create the backend environment file from the project root:
 
 ```bash
 cp .env.example .env
 ```
 
-Make sure it contains:
+Example:
 
 ```env
-JWT_SECRET=your-secret-key
+JWT_SECRET=replace-this-with-a-long-random-secret
+FRONTEND_URL=http://localhost:5173
+PORT=3000
+DATABASE_URL=postgresql://localhost:5432/developer_team_hub
+TEST_DATABASE_URL=postgresql://localhost:5432/developer_team_hub_test
 ```
 
-Do not commit your real `.env` file.
+- `JWT_SECRET` signs and verifies login tokens.
+- `FRONTEND_URL` is the origin allowed by CORS.
+- `PORT` is optional and defaults to `3000`.
+- `DATABASE_URL` is optional and defaults to the local `developer_team_hub` database.
+- `TEST_DATABASE_URL` is read only when `NODE_ENV=test` and defaults to the local `developer_team_hub_test` database.
+
+Do not commit the real `.env` file.
+
+## Frontend Environment Variables
+
+Create the frontend environment file:
+
+```bash
+cp frontend/.env.example frontend/.env
+```
+
+Its local values are:
+
+```env
+VITE_API_URL=http://localhost:3000
+VITE_WS_URL=ws://localhost:3000
+```
+
+Restart the frontend development server after changing a Vite environment variable.
 
 ## Running the Application
 
-The frontend and backend run as two separate development servers.
+The backend and frontend are separate development servers, so keep both terminals open.
 
-### Terminal 1 — Backend
+### Terminal 1 — backend
 
 From the project root:
 
@@ -158,243 +248,147 @@ From the project root:
 npm start
 ```
 
-Backend:
+The default backend address is `http://localhost:3000`.
 
-```text
-http://localhost:3000
-```
+### Terminal 2 — frontend
 
-### Terminal 2 — Frontend
+From the project root:
 
 ```bash
 cd frontend
 npm run dev
 ```
 
-Frontend:
+Open `http://localhost:5173/register` to create an account, or `http://localhost:5173/login` if an account already exists.
 
-```text
-http://localhost:5173
-```
+## First Use
 
-Open:
+1. Register at `/register`. A password must contain at least eight characters, one uppercase letter, one lowercase letter, and one number.
+2. Log in at `/login`.
+3. Create a project with a name, description, status, and optional due date.
+4. To collaborate, register a second account in another browser/private window.
+5. From the project owner's account, add the second account by username and choose `viewer` or `editor`.
+6. Open the project tasks to create tasks, set priority and due date, and optionally assign a project user.
+7. Use the activity view to see recorded changes.
 
-```text
-http://localhost:5173/login
-```
-
-## Register a User
-
-The current frontend includes login but does not include a registration page yet.
-
-Register a normal user through the backend:
-
-```bash
-curl -X POST http://localhost:3000/auth/register \
-  -H "Content-Type: application/json" \
-  -d '{"username":"srinath","password":"hello123"}'
-```
-
-Then log in through the React frontend with:
-
-```text
-Username: srinath
-Password: hello123
-```
-
-## Admin User
-
-For this learning project, registering with the username `admin` automatically assigns the admin role.
-
-```bash
-curl -X POST http://localhost:3000/auth/register \
-  -H "Content-Type: application/json" \
-  -d '{"username":"admin","password":"admin123"}'
-```
-
-Then log in through the frontend using:
-
-```text
-Username: admin
-Password: admin123
-```
-
-The admin user can delete projects.
-
-> This admin assignment is intentionally simplified for learning and should not be used in a production authentication system.
+Normal registration always creates a user with the `user` role. The application does not grant administrator access based on a special username.
 
 ## Frontend Routes
 
-### Login
+| Route | Purpose |
+| --- | --- |
+| `/register` | Create a user account |
+| `/login` | Log in and save the JWT in `localStorage` |
+| `/projects` | View the authenticated project dashboard |
 
-```text
-/login
-```
+If a token is missing or rejected, the projects page redirects to `/login`.
 
-The login page sends credentials to:
+## API Overview
 
-```text
-POST /auth/login
-```
-
-When login succeeds:
-
-1. The backend returns a JWT.
-2. React stores the token in `localStorage`.
-3. React navigates to `/projects`.
-
-### Projects
-
-```text
-/projects
-```
-
-The page checks for a stored token.
-
-If there is no token, or if the backend rejects it, the user is redirected to `/login`.
-
-## API Routes
-
-### Health Check
-
-```text
-GET /health
-```
-
-Example response:
-
-```json
-{
-  "status": "ok"
-}
-```
-
-## Authentication
-
-### Register
-
-```text
-POST /auth/register
-```
-
-Example request body:
-
-```json
-{
-  "username": "user1",
-  "password": "password123"
-}
-```
-
-### Login
-
-```text
-POST /auth/login
-```
-
-Example request:
-
-```json
-{
-  "username": "user1",
-  "password": "password123"
-}
-```
-
-Example response:
-
-```json
-{
-  "message": "Login successful",
-  "token": "..."
-}
-```
-
-## Protected Project API
-
-Project routes require:
+Except for registration, login, the root route, and the health check, API requests require this header:
 
 ```text
 Authorization: Bearer <token>
 ```
 
-### Get all projects
+### Public routes
 
-```text
-GET /projects
-```
+| Method | Route | Purpose |
+| --- | --- | --- |
+| `GET` | `/` | Basic API message |
+| `GET` | `/health` | Health check |
+| `POST` | `/auth/register` | Register a user |
+| `POST` | `/auth/login` | Log in and receive a JWT |
 
-### Get one project
+### Project routes
 
-```text
-GET /projects/:id
-```
+| Method | Route | Purpose |
+| --- | --- | --- |
+| `GET` | `/projects?status=&sort=` | List accessible projects with optional filtering and sorting |
+| `GET` | `/projects/:id` | Get one accessible project |
+| `POST` | `/projects` | Create a project |
+| `PATCH` | `/projects/:id` | Update a project owned by the user |
+| `DELETE` | `/projects/:id` | Delete an owned project, or any project as an administrator |
 
-### Create a project
+Valid project statuses are `planned`, `in-progress`, and `completed`. Valid sort values are `newest` and `oldest`. API date values use `YYYY-MM-DD`.
 
-```text
-POST /projects
-```
-
-Example body:
-
-```json
-{
-  "name": "React Dashboard"
-}
-```
-
-### Update a project
-
-```text
-PATCH /projects/:id
-```
-
-Example body:
+Example project body:
 
 ```json
 {
-  "name": "Updated Project"
+  "name": "Developer Team Hub",
+  "description": "Build and learn a full-stack application",
+  "status": "in-progress",
+  "due_date": "2026-10-15"
 }
 ```
 
-### Delete a project
+### Member routes
 
-```text
-DELETE /projects/:id
+| Method | Route | Purpose |
+| --- | --- | --- |
+| `GET` | `/projects/:projectId/members` | List members of an accessible project |
+| `POST` | `/projects/:projectId/members` | Add a registered user by username (owner only) |
+| `PATCH` | `/projects/:projectId/members/:userId` | Change a member role (owner only) |
+| `DELETE` | `/projects/:projectId/members/:userId` | Remove a member and unassign their project tasks (owner only) |
+
+Example add-member body:
+
+```json
+{
+  "username": "teammate",
+  "role": "editor"
+}
 ```
 
-Requires an authenticated admin user.
+### Task routes
 
-## React Component Structure
+| Method | Route | Purpose |
+| --- | --- | --- |
+| `GET` | `/projects/:projectId/tasks?priority=&status=` | List and filter tasks in an accessible project |
+| `POST` | `/projects/:projectId/tasks` | Create a task as the owner or an editor |
+| `PATCH` | `/tasks/:id` | Update a task as the owner or an editor |
+| `DELETE` | `/tasks/:id` | Delete a task as the owner or an editor |
 
-```text
-App
-├── Login
-└── Projects
-    ├── ProjectForm
-    └── ProjectItem
+Valid task statuses are `todo`, `in-progress`, and `done`. Valid priorities are `low`, `medium`, and `high`.
+
+Example task body:
+
+```json
+{
+  "title": "Finish activity history",
+  "status": "todo",
+  "priority": "high",
+  "assigneeUsername": "teammate",
+  "due_date": "2026-10-12"
+}
 ```
 
-### `Login.jsx`
+Use an empty `assigneeUsername` to leave or make a task unassigned. An assignee must be the project owner or a current project member.
 
-Handles username/password state, login submission, saving the JWT, and navigation to `/projects`.
+### Activity and dashboard routes
 
-### `Projects.jsx`
+| Method | Route | Purpose |
+| --- | --- | --- |
+| `GET` | `/projects/:projectId/activity` | View activity for an accessible project |
+| `GET` | `/dashboard/stats` | Get statistics for projects visible to the current user |
 
-Handles project loading, authentication checks, API requests, WebSocket connection, project state, logout, and CRUD logic.
+## Permissions
 
-### `ProjectForm.jsx`
+| Action | Owner | Editor | Viewer | Administrator |
+| --- | --- | --- | --- | --- |
+| View an accessible project and its tasks | Yes | Yes | Yes | All projects in the project list |
+| Edit project details | Yes | No | No | Only when also the owner |
+| Delete project | Yes | No | No | Yes |
+| Manage members | Yes | No | No | Only when also the owner |
+| Create, edit, or delete tasks | Yes | Yes | No | Only with project access |
+| View project activity | Yes | Yes | Yes | Only with project access |
 
-Handles the create-project form and passes the new project name to `Projects.jsx` through a function prop.
-
-### `ProjectItem.jsx`
-
-Displays one project and handles the edit/delete UI.
+The administrator role currently gives global project listing, dashboard statistics, project deletion, and WebSocket visibility. Other routes still require ownership or project membership as shown above.
 
 ## Real-Time WebSocket Updates
 
-The backend broadcasts:
+The backend emits these project events:
 
 ```text
 projectCreated
@@ -402,150 +396,74 @@ projectUpdated
 projectDeleted
 ```
 
-The React frontend keeps a WebSocket connection open at:
+The browser adds the current JWT when opening the WebSocket. The backend verifies it before accepting the connection and sends each event only to administrators, the project owner, and current project members.
 
 ```text
-ws://localhost:3000
+Project HTTP request
+→ PostgreSQL is updated
+→ EventEmitter emits a project event
+→ WebSocket sends it to authorized connections
+→ React updates the visible project list
 ```
 
-Flow:
+## Activity History
 
-```text
-HTTP request
-→ Express updates project
-→ EventEmitter emits event
-→ WebSocket broadcasts event
-→ React receives event
-→ React state updates
-→ UI updates automatically
-```
+Activity records are stored in PostgreSQL. They describe actions such as:
 
-## Event-Driven Activity Logging
+- Creating or updating a project
+- Creating, updating, or deleting a task
+- Assigning a task or changing its due date
+- Adding, changing, or removing a project member
 
-Project changes also emit Node.js `EventEmitter` events.
+Deleting a project also deletes its related tasks, members, and activity records through PostgreSQL foreign-key rules.
 
-Listeners record activity such as:
+## Existing Backend Test Command
 
-```text
-PROJECT_CREATED
-PROJECT_UPDATED
-PROJECT_DELETED
-```
+The backend test setup deletes records from its configured test database between tests. Never point `TEST_DATABASE_URL` at a development or production database.
 
-to the activity log.
-
-## CORS
-
-The frontend runs on `http://localhost:5173` and the backend runs on `http://localhost:3000`.
-
-Because these are different origins, the Express backend uses CORS to allow requests from the React frontend.
-
-## Testing
-
-Run backend tests with:
+To run the existing backend suite:
 
 ```bash
 npm test
 ```
 
-The test suite covers:
-
-- health endpoint
-- user registration
-- user login
-- JWT-protected project access
-- project creation
-- normal-user delete authorization
-- admin delete authorization
-
-Test project data and activity logs are separated from normal application data.
-
-## Concepts Practiced
-
-This capstone demonstrates:
-
-- Node.js modules
-- npm
-- Express
-- REST APIs
-- HTTP methods and status codes
-- routers
-- middleware
-- route parameters
-- validation
-- error handling
-- async/await
-- `fs`
-- `path`
-- environment variables
-- bcrypt password hashing
-- JWT authentication
-- authorization
-- EventEmitter
-- WebSockets
-- graceful shutdown
-- Jest
-- Supertest
-- React components
-- JSX
-- props
-- state
-- events
-- forms
-- conditional rendering
-- list rendering
-- `useEffect`
-- `fetch`
-- React Router
-- protected frontend routes
-- `localStorage`
-- parent-child component communication
-- basic CSS layout
+By default, it uses `developer_team_hub_test`. That database must exist and contain the current schema.
 
 ## Current Limitations
 
-This is a learning capstone, not a production-ready application.
+This is a learning project, not a production-ready application.
 
-Current limitations include:
+- JWTs are stored in browser `localStorage`.
+- The WebSocket sends the JWT in its connection URL because the browser WebSocket API cannot set a custom authorization header.
+- There is no password reset or email verification.
+- There is no dedicated administrator-management interface.
+- Frontend error handling and accessibility can be improved.
+- The main `Projects.jsx` component is large and should be split into smaller hooks/components.
+- Deployment, Docker, and CI/CD are not configured yet.
 
-- users are stored in memory and disappear when the backend restarts
-- project data is stored in JSON instead of a database
-- the frontend does not currently have a registration page
-- admin assignment is simplified
-- JWT is stored in `localStorage`
-- frontend error messages are basic
-- there is no production deployment configuration yet
+## Concepts Practised
 
-## Future Improvements
+- React components, props, state, forms, and effects
+- React Router and protected pages
+- Fetch requests and JWT authentication
+- REST APIs and HTTP status codes
+- Express routers and middleware
+- Validation and error handling
+- Async/await
+- PostgreSQL queries, relationships, and transactions
+- Password hashing and role-based permissions
+- EventEmitter and authenticated WebSockets
+- Environment-based configuration
+- Graceful shutdown
 
-Possible next steps:
-
-- PostgreSQL database
-- persistent user accounts
-- frontend registration page
-- improved form validation and error messages
-- loading states
-- frontend tests
-- improved authentication design
-- deployment
-- Docker
-- CI/CD
-
-## Quick Run Summary
+## Quick Start Summary
 
 ```text
-Terminal 1:
-npm start
-→ backend on localhost:3000
-
-Terminal 2:
-cd frontend
-npm run dev
-→ frontend on localhost:5173
-```
-
-Then open:
-
-```text
-http://localhost:5173/login
+1. Install backend and frontend dependencies
+2. Create developer_team_hub in PostgreSQL
+3. Apply schema.sql to the empty database
+4. Create the backend and frontend .env files
+5. Run npm start in the project root
+6. Run npm run dev inside frontend/
+7. Open http://localhost:5173/register
 ```

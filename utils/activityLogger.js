@@ -1,20 +1,17 @@
-const fs = require("fs").promises;
-const path = require("path");
+const pool = require("../db");
 
-const logFile =
-    process.env.NODE_ENV === "test"
-        ? path.join(__dirname, "../logs/activity.test.log")
-        : path.join(__dirname, "../logs/activity.log");
-        
-
-async function logActivity(message) {
-    const timestamp = new Date().toISOString();
-
-    await fs.appendFile(
-        logFile,
-        `${timestamp} ${message}\n`
+async function logActivity(
+    projectId,
+    userId,
+    action,
+    queryable = pool
+) {
+    await queryable.query(
+        `INSERT INTO activity_logs
+         (project_id, user_id, action)
+         VALUES ($1, $2, $3)`,
+        [projectId, userId, action]
     );
 }
 
 module.exports = logActivity;
-
