@@ -1,3 +1,10 @@
+import {
+    ListChecks,
+    Users,
+    Pencil,
+    Trash2
+} from "lucide-react";
+
 function ProjectItem({
     project,
     editingId,
@@ -16,17 +23,33 @@ function ProjectItem({
 }) {
     const isEditing = editingId === project.id;
 
+    function getStatusClass(status) {
+        if (status === "completed") {
+            return "status-badge completed";
+        }
+
+        if (status === "in-progress") {
+            return "status-badge in-progress";
+        }
+
+        return "status-badge planned";
+    }
+
     return (
-        <div className="project-item">
+        <div className="project-card">
             {isEditing ? (
                 <>
                     <input
+                        className="text-input"
                         type="text"
                         value={editName}
-                        onChange={(e) => setEditName(e.target.value)}
+                        onChange={(e) =>
+                            setEditName(e.target.value)
+                        }
                     />
 
                     <textarea
+                        className="textarea-input"
                         value={editDescription}
                         onChange={(e) =>
                             setEditDescription(e.target.value)
@@ -34,6 +57,7 @@ function ProjectItem({
                     />
 
                     <select
+                        className="select-input"
                         value={editStatus}
                         onChange={(e) =>
                             setEditStatus(e.target.value)
@@ -52,51 +76,81 @@ function ProjectItem({
                         </option>
                     </select>
 
-                    <button
-                        onClick={() =>
-                            handleEditProject(project.id)
-                        }
-                    >
-                        Save
-                    </button>
+                    <div className="panel-actions">
+                        <button
+                            className="btn-secondary"
+                            onClick={cancelEditing}
+                        >
+                            Cancel
+                        </button>
 
-                    <button onClick={cancelEditing}>
-                        Cancel
-                    </button>
+                        <button
+                            className="btn-primary"
+                            onClick={() =>
+                                handleEditProject(project.id)
+                            }
+                        >
+                            Save changes
+                        </button>
+                    </div>
                 </>
             ) : (
                 <>
-                    <h3>{project.name}</h3>
+                    <div className="card-top">
+                        <h3 className="card-title">
+                            {project.name}
+                        </h3>
 
-                    <p>
+                        <span className={getStatusClass(project.status)}>
+                            {project.status}
+                        </span>
+                    </div>
+
+                    <p className="card-desc">
                         {project.description}
                     </p>
 
-                    <p>
-                        Status: {project.status}
-                    </p>
-                    <button onClick={() => handleViewTasks(project.id)}>
-    View Tasks
-</button>
-<button onClick={() => handleViewMembers(project.id)}>
-    View Members
-</button>
+                    <div className="card-actions">
+                        <button
+                            className="icon-btn"
+                            onClick={() =>
+                                handleViewTasks(project.id)
+                            }
+                        >
+                            <ListChecks size={14} />
+                            View Tasks
+                        </button>
 
-                    <button
-                        onClick={() =>
-                            startEditing(project)
-                        }
-                    >
-                        Edit
-                    </button>
+                        <button
+                            className="icon-btn"
+                            onClick={() =>
+                                handleViewMembers(project.id)
+                            }
+                        >
+                            <Users size={14} />
+                            View Members
+                        </button>
 
-                    <button
-                        onClick={() =>
-                            handleDeleteProject(project.id)
-                        }
-                    >
-                        Delete
-                    </button>
+                        <button
+                            className="icon-btn"
+                            onClick={() =>
+                                startEditing(project)
+                            }
+                        >
+                            <Pencil size={14} />
+                            Edit
+                        </button>
+
+                        <button
+                            className="icon-btn danger"
+                            onClick={() =>
+                                handleDeleteProject(project.id)
+                            }
+                        >
+                            <Trash2 size={14} />
+                            Delete
+                        </button>
+                    </div>
                 </>
             )}
         </div>

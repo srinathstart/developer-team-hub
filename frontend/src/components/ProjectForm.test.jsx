@@ -25,11 +25,15 @@ test("submits the project name", async () => {
 
     const input = screen.getByLabelText("Project name");
     const button = screen.getByRole("button", {
-        name: "Create Project",
+        name: "Create project",
     });
 
     await user.type(input, "My Project");
     await user.click(button);
 
-    expect(onCreate).toHaveBeenCalledWith("My Project");
+    expect(onCreate).toHaveBeenCalledWith({
+    name: "My Project",
+    description: "",
+    status: "planned"
+});    
 });

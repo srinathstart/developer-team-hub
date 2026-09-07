@@ -6,6 +6,12 @@ import TaskList from "./TaskList";
 import TaskForm from "./TaskForm";
 import MemberList from "./MemberList";
 import MemberForm from "./MemberForm";
+import {
+    Search,
+    LogOut,
+    Plus,
+    ChevronDown
+} from "lucide-react";
 
 
 function Projects() {
@@ -22,6 +28,9 @@ function Projects() {
     const [editTaskStatus, setEditTaskStatus] = useState("todo");
     const [selectedMembersProjectId, setSelectedMembersProjectId] = useState(null);
     const [members, setMembers] = useState([]);
+    const [searchTerm, setSearchTerm] = useState("");
+    const [statusFilter, setStatusFilter] = useState("all");
+    const [showNewProject, setShowNewProject] = useState(false);
 
     const navigate = useNavigate();
     const [loading, setLoading] = useState(true);
@@ -124,9 +133,11 @@ function Projects() {
 
     const data = await response.json();
 
-    if (!response.ok) {
-        setError(data.error || "Something went wrong");
-    }
+    if (response.ok) {
+    setShowNewProject(false);
+} else {
+    setError(data.error || "Something went wrong");
+}
 }
 
     function startEditing(project) {
@@ -204,7 +215,14 @@ function cancelEditingTask() {
             setError(data.error || "Something went wrong");
         }
     }
-    async function handleViewTasks(projectId) {
+    
+async function handleViewTasks(projectId) {
+    if (selectedProjectId === projectId) {
+        setSelectedProjectId(null);
+        setTasks([]);
+        return;
+    }
+
     const token = localStorage.getItem("token");
     setError("");
 
@@ -317,6 +335,12 @@ async function handleDeleteTask(id) {
 }
 
 async function handleViewMembers(projectId) {
+    if (selectedMembersProjectId === projectId) {
+        setSelectedMembersProjectId(null);
+        setMembers([]);
+        return;
+    }
+
     const token = localStorage.getItem("token");
     setError("");
 
@@ -388,30 +412,109 @@ async function handleRemoveMember(userId) {
         setError(data.error || "Failed to remove member");
     }
 }
+const filteredProjects = projects.filter((project) => {
+    const matchesSearch = project.name
+        .toLowerCase()
+        .includes(searchTerm.toLowerCase());
+
+    const matchesStatus =
+        statusFilter === "all" ||
+        project.status === statusFilter;
+
+    return matchesSearch && matchesStatus;
+});
+
 
     if (loading) {
     return <p>Loading...</p>;
 }
 
+
     return (
     <div className="projects-page">
-        <div className="projects-card">
-            <div className="projects-header">
-                <h1>Developer Team Hub</h1>
+        <header className="hub-header">
+            <div className="brand">
+                <div className="brand-mark">
+                    DH
+                </div>
 
-                <button onClick={handleLogout}>
-                    Logout
-                </button>
+                <span className="brand-name">
+                    Developer Team Hub
+                </span>
             </div>
+
+            <button
+                className="logout-btn"
+                onClick={handleLogout}
+            >
+                <LogOut size={14} />
+                Log out
+            </button>
+        </header>
+
+        <main className="hub-body">
            
             
-            <h2>Projects</h2>
+            <div className="toolbar">
+    <button
+    className="btn-primary"
+    onClick={() => setShowNewProject((current) => !current)}
+>
+    <Plus size={15} />
+    New project
+</button>
+
+    <div className="search-wrap">
+        <Search size={15} />
+
+        <input
+            className="search-input"
+            type="text"
+            placeholder="Search projects by name"
+            value={searchTerm}
+            onChange={(e) =>
+                setSearchTerm(e.target.value)
+            }
+        />
+    </div>
+
+    <div className="select-wrap">
+        <select
+            className="select-input"
+            value={statusFilter}
+            onChange={(e) =>
+                setStatusFilter(e.target.value)
+            }
+        >
+            <option value="all">All</option>
+            <option value="planned">Planned</option>
+            <option value="in-progress">
+                In Progress
+            </option>
+            <option value="completed">
+                Completed
+            </option>
+        </select>
+
+        <ChevronDown size={14} />
+    </div>
+</div>
+
             {error && <p>{error}</p>}
 
-            <ProjectForm onCreate={handleCreateProject} />
+            {showNewProject && (
+    <ProjectForm
+    onCreate={handleCreateProject}
+    onCancel={() => setShowNewProject(false)}
+/>
+)}
 
-            {projects.map((project) => (
-    <div key={project.id}>
+            {filteredProjects.length === 0 && (
+    <p>No projects found</p>
+)}
+            <div className="project-grid">
+    {filteredProjects.map((project) => (
+     <div className="project-wrapper" key={project.id}>
         <ProjectItem
             project={project}
             editingId={editingId}
@@ -457,7 +560,8 @@ async function handleRemoveMember(userId) {
 )}
     </div>
             ))}
-        </div>
+            </div>
+            </main>
     </div>
 );
 

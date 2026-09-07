@@ -34,52 +34,102 @@ function Register() {
     }
 
     return (
-        <div className="login-page">
-            <div className="login-card">
-                <h1>Developer Team Hub</h1>
-                <h2>Register</h2>
+    <div className="auth-page">
+        <div className="auth-container">
+            <div className="auth-brand-panel">
+                <div>
+                    <div className="auth-brand">
+                        <div className="auth-logo"></div>
+                        <span>Developer Team Hub</span>
+                    </div>
 
-                <form className="login-form" onSubmit={handleSubmit}>
-                    <label htmlFor="register-username">
+                    <p className="auth-brand-description">
+                        Manage projects, tasks, and team collaboration
+                        in one place.
+                    </p>
+                </div>
+
+                <div className="auth-illustration">
+                    <div className="node node-center"></div>
+                    <div className="node node-one"></div>
+                    <div className="node node-two"></div>
+                    <div className="node node-three"></div>
+                    <div className="node node-four"></div>
+                </div>
+
+                <p className="auth-brand-footer">
+                    Set up your workspace in minutes.
+                </p>
+            </div>
+
+            <div className="auth-form-panel">
+                <form
+                    className="auth-form"
+                    onSubmit={handleSubmit}
+                >
+                    <h1>Create an account</h1>
+
+                    <p className="auth-form-subtitle">
+                        Get started with your team.
+                    </p>
+
+                    <label htmlFor="username">
                         Username
                     </label>
 
                     <input
-                        id="register-username"
+                        id="username"
                         type="text"
+                        placeholder="jane.doe"
                         value={username}
-                        onChange={(e) => setUsername(e.target.value)}
+                        onChange={(e) =>
+                            setUsername(e.target.value)
+                        }
                     />
 
-                    <label htmlFor="register-password">
+                    <label htmlFor="password">
                         Password
                     </label>
 
                     <input
-                        id="register-password"
+                        id="password"
                         type="password"
+                        placeholder="••••••••"
                         value={password}
-                        onChange={(e) => setPassword(e.target.value)}
+                        onChange={(e) =>
+                            setPassword(e.target.value)
+                        }
                     />
 
-                    <p>
-                        Password must be at least 8 characters and include
-                        uppercase, lowercase, and a number.
+                    <p className="auth-password-help">
+                        At least 8 characters, including uppercase,
+                        lowercase, and a number.
                     </p>
 
-                    {error && <p>{error}</p>}
+                    {error && (
+                        <p className="auth-error">
+                            {error}
+                        </p>
+                    )}
 
-                    <button type="submit">
+                    <button
+                        className="auth-submit"
+                        type="submit"
+                    >
                         Register
                     </button>
+
+                    <p className="auth-switch">
+                        Already have an account?{" "}
+                        <Link to="/login">
+                            Login
+                        </Link>
+                    </p>
                 </form>
-                <p>
-    Already have an account?{" "}
-    <Link to="/login">Login</Link>
-</p>
             </div>
         </div>
-    );
+    </div>
+);
 }
 
 export default Register;

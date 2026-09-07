@@ -34,48 +34,97 @@ function Login() {
     }
 
     return (
-        <div className="login-page">
-            <div className="login-card">
-                <h1>Developer Team Hub</h1>
-                <h2>Login</h2>
+    <div className="auth-page">
+        <div className="auth-container">
+            <div className="auth-brand-panel">
+                <div>
+                    <div className="auth-brand">
+                        <div className="auth-logo"></div>
+                        <span>Developer Team Hub</span>
+                    </div>
 
-                <form
-                    className="login-form"
-                    onSubmit={handleSubmit}
-                >
-                    <label htmlFor="username">Username</label>
+                    <p className="auth-brand-description">
+                        Manage projects, tasks, and team collaboration
+                        in one place.
+                    </p>
+                </div>
 
-<input
-    id="username"
-    type="text"
-    placeholder="Username"
-    value={username}
-    onChange={(e) => setUsername(e.target.value)}
-/>
+                <div className="auth-illustration">
+                    <div className="node node-center"></div>
+                    <div className="node node-one"></div>
+                    <div className="node node-two"></div>
+                    <div className="node node-three"></div>
+                    <div className="node node-four"></div>
+                </div>
 
-                    <label htmlFor="password">Password</label>
-
-<input
-    id="password"
-    type="password"
-    placeholder="Password"
-    value={password}
-    onChange={(e) => setPassword(e.target.value)}
-/>
-
-                    {error && <p>{error}</p>}
-
-                    <button type="submit">
-                        Login
-                    </button>
-                </form>
-                <p>
-                    Don't have an account?{" "}
-                    <Link to="/register">Register</Link>
+                <p className="auth-brand-footer">
+                    Built for engineering teams.
                 </p>
             </div>
+
+            <div className="auth-form-panel">
+                <form
+                    className="auth-form"
+                    onSubmit={handleSubmit}
+                >
+                    <h1>Sign in</h1>
+
+                    <p className="auth-form-subtitle">
+                        Welcome back. Enter your details.
+                    </p>
+
+                    <label htmlFor="username">
+                        Username
+                    </label>
+
+                    <input
+                        id="username"
+                        type="text"
+                        placeholder="jane.doe"
+                        value={username}
+                        onChange={(e) =>
+                            setUsername(e.target.value)
+                        }
+                    />
+
+                    <label htmlFor="password">
+                        Password
+                    </label>
+
+                    <input
+                        id="password"
+                        type="password"
+                        placeholder="••••••••"
+                        value={password}
+                        onChange={(e) =>
+                            setPassword(e.target.value)
+                        }
+                    />
+
+                    {error && (
+                        <p className="auth-error">
+                            {error}
+                        </p>
+                    )}
+
+                    <button
+                        className="auth-submit"
+                        type="submit"
+                    >
+                        Log in
+                    </button>
+
+                    <p className="auth-switch">
+                        Don't have an account?{" "}
+                        <Link to="/register">
+                            Register
+                        </Link>
+                    </p>
+                </form>
+            </div>
         </div>
-    );
+    </div>
+);
 }
 
 export default Login;

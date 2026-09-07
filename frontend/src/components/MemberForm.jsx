@@ -12,24 +12,21 @@ function MemberForm({ onAddMember }) {
     }
 
     return (
-        <form onSubmit={handleSubmit}>
-            <label htmlFor="member-user-id">
-                User ID
-            </label>
+    <form className="inline-form" onSubmit={handleSubmit}>
+        <input
+            className="text-input"
+            id="member-user-id"
+            type="number"
+            value={userId}
+            onChange={(e) => setUserId(e.target.value)}
+            placeholder="User ID"
+        />
 
-            <input
-                id="member-user-id"
-                type="number"
-                value={userId}
-                onChange={(e) => setUserId(e.target.value)}
-                placeholder="User ID"
-            />
-
-            <button type="submit">
-                Add Member
-            </button>
-        </form>
-    );
+        <button className="btn-primary" type="submit">
+            Add Member
+        </button>
+    </form>
+);
 }
 
 export default MemberForm;

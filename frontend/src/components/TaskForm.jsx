@@ -17,38 +17,32 @@ function TaskForm({ onCreateTask }) {
     }
 
     return (
-        <form onSubmit={handleSubmit}>
-            <label htmlFor="task-title">
-                Task title
-            </label>
+    <form className="inline-form" onSubmit={handleSubmit}>
+        <input
+            className="text-input"
+            id="task-title"
+            type="text"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            placeholder="New task title"
+        />
 
-            <input
-                id="task-title"
-                type="text"
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                placeholder="Task title"
-            />
+        <select
+            className="select-input"
+            id="task-status"
+            value={status}
+            onChange={(e) => setStatus(e.target.value)}
+        >
+            <option value="todo">Todo</option>
+            <option value="in-progress">In Progress</option>
+            <option value="done">Done</option>
+        </select>
 
-            <label htmlFor="task-status">
-                Status
-            </label>
-
-            <select
-                id="task-status"
-                value={status}
-                onChange={(e) => setStatus(e.target.value)}
-            >
-                <option value="todo">Todo</option>
-                <option value="in-progress">In Progress</option>
-                <option value="done">Done</option>
-            </select>
-
-            <button type="submit">
-                Add Task
-            </button>
-        </form>
-    );
+        <button className="btn-primary" type="submit">
+            Add Task
+        </button>
+    </form>
+);
 }
 
 export default TaskForm;

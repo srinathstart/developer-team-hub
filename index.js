@@ -67,7 +67,6 @@ const {
 app.use(express.json());
 app.use(logger);
 app.use("/auth", authRouter);
-app.use("/", memberRouter);
 
 
 app.get("/", (req, res) => {
@@ -80,6 +79,7 @@ app.get("/health", (req, res) => {
     });
 });
 
+app.use("/", memberRouter);
 app.use("/projects", projectRouter);
 app.use("/", taskRouter);
 
