@@ -88,11 +88,18 @@ Users can create projects, invite registered users as members, assign roles and 
 - Jest and Supertest for the backend
 - Vitest and Testing Library for frontend component checks
 - ESLint and Vite production builds
+- GitHub Actions continuous integration on pushes and pull requests
 
 ## Project Structure
 
 ```text
 developer-team-hub/
+├── .github/
+│   └── workflows/
+│       └── ci.yml
+├── .dockerignore
+├── Dockerfile
+├── compose.yaml
 ├── events/
 │   └── projectEvents.js
 ├── middleware/
@@ -164,7 +171,10 @@ developer-team-hub/
 │   │   ├── App.jsx
 │   │   ├── App.css
 │   │   └── main.jsx
+│   ├── .dockerignore
 │   ├── .env.example
+│   ├── Dockerfile
+│   ├── nginx.conf
 │   └── package.json
 ├── .env.example
 ├── db.js
@@ -175,7 +185,7 @@ developer-team-hub/
 └── README.md
 ```
 
-The old files in `data/` are leftovers from an earlier learning stage. The current application stores users, projects, members, tasks, activity records, and administrator audit records in PostgreSQL.
+The old files in `data/` and `logs/` are leftovers from an earlier learning stage. The current application stores users, projects, members, tasks, activity records, and administrator audit records in PostgreSQL.
 
 ## Prerequisites
 
@@ -186,6 +196,8 @@ Install these before starting:
 - PostgreSQL
 
 The installed Vite version expects Node.js `20.19+` or `22.12+`.
+
+Alternatively, the Docker workflow requires Docker Desktop and does not require running Node.js or PostgreSQL directly on the host.
 
 ## Installation
 
@@ -293,6 +305,42 @@ npm run dev
 ```
 
 Open `http://localhost:5173/register` to create an account, or `http://localhost:5173/login` if an account already exists.
+
+## Running with Docker
+
+Docker Compose can run the frontend, backend, and PostgreSQL together. Docker Desktop must be installed and running.
+
+From the project root, build and start all three containers:
+
+```bash
+docker compose up -d --build
+```
+
+Open the Docker frontend at `http://127.0.0.1:5174/register`.
+
+| Service | Address | Purpose |
+| --- | --- | --- |
+| Frontend | `http://127.0.0.1:5174` | React production build served by Nginx |
+| Backend | `http://127.0.0.1:3001` | Node.js and Express API |
+| PostgreSQL | `localhost:5434` | Docker development database |
+
+The Docker database is separate from the normal local database on port `5432`. Its records remain available after containers stop because Compose stores them in the named `postgres_data` volume.
+
+View the running containers:
+
+```bash
+docker compose ps
+```
+
+Stop and remove the containers while keeping the database data:
+
+```bash
+docker compose down
+```
+
+To start again later, run `docker compose up -d`. Use `docker compose down -v` only when you intentionally want to delete the Docker database volume and all records stored in it.
+
+The credentials and JWT secret in `compose.yaml` are for local Docker learning only. Replace them with securely managed values before any real deployment.
 
 ## First Use
 
@@ -494,13 +542,23 @@ npm test
 
 By default, it uses `developer_team_hub_test`. That database must exist and contain the current schema.
 
+## Continuous Integration
+
+The GitHub Actions workflow in `.github/workflows/ci.yml` runs automatically on every push and pull request. It contains three independent jobs:
+
+- **Backend tests:** starts a temporary PostgreSQL 16 service, applies `schema.sql`, and runs the existing Jest suite.
+- **Frontend checks:** uses Node.js 22, runs ESLint, and creates a Vite production build.
+- **Docker builds:** builds the backend and frontend images with Docker Compose without publishing or deploying them.
+
+The workflow uses temporary GitHub-hosted environments and does not connect to the local development database.
+
 ## Current Limitations
 
 This is a learning project, not a production-ready application.
 
 - There is no password reset or email verification.
 - A formal WCAG audit with browser accessibility tools and assistive technology has not been completed.
-- Deployment, Docker, and CI/CD are not configured yet.
+- Deployment and continuous delivery are not configured yet.
 
 ## Concepts Practised
 
@@ -516,9 +574,13 @@ This is a learning project, not a production-ready application.
 - HttpOnly authentication cookies and CSRF protection
 - EventEmitter and authenticated WebSockets
 - Environment-based configuration
+- Continuous integration with GitHub Actions
+- Multi-container development with Docker Compose
 - Graceful shutdown
 
 ## Quick Start Summary
+
+Manual development setup:
 
 ```text
 1. Install backend and frontend dependencies
@@ -528,4 +590,12 @@ This is a learning project, not a production-ready application.
 5. Run npm start in the project root
 6. Run npm run dev inside frontend/
 7. Open http://localhost:5173/register
+```
+
+Docker setup:
+
+```text
+1. Start Docker Desktop
+2. Run docker compose up -d --build
+3. Open http://127.0.0.1:5174/register
 ```

@@ -1,0 +1,44 @@
+services:
+  backend:
+    build: .
+    environment:
+      JWT_SECRET: docker-development-secret
+      FRONTEND_URL: http://127.0.0.1:5174
+      PORT: 3000
+      DATABASE_URL: postgresql://postgres:postgres@database:5432/developer_team_hub
+    ports:
+      - "3001:3000"
+    depends_on:
+      database:
+        condition: service_healthy
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        VITE_API_URL: http://127.0.0.1:3001
+        VITE_WS_URL: ws://127.0.0.1:3001
+    ports:
+      - "5174:80"
+    depends_on:
+      - backend
+
+  database:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: developer_team_hub
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5434:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./schema.sql:/docker-entrypoint-initdb.d/001-schema.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d developer_team_hub"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres_data:

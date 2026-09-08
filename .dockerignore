@@ -1,0 +1,13 @@
+node_modules/
+frontend/
+tests/
+data/
+logs/
+migrations/
+.git/
+.github/
+.env
+.env.*
+!.env.example
+coverage/
+README.md
