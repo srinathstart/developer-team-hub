@@ -8,6 +8,7 @@ import "./App.css";
 import Register from "./components/Register";
 import Login from "./components/Login";
 import Projects from "./components/Projects";
+import AdminUsers from "./components/AdminUsers";
 
 function App() {
     return (
@@ -16,6 +17,7 @@ function App() {
                 <Route path="/register" element={<Register />} />
                 <Route path="/login" element={<Login />} />
                 <Route path="/projects" element={<Projects />} />
+                <Route path="/admin" element={<AdminUsers />} />
             </Routes>
         </BrowserRouter>
     );

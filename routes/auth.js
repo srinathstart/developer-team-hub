@@ -1,6 +1,8 @@
 const express = require("express");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
+const auth = require("../middleware/auth");
+const { authCookie } = require("../utils/cookies");
 
 const router = express.Router();
 
@@ -171,6 +173,8 @@ router.post("/login", async (req, res) => {
             }
         );
 
+        res.setHeader("Set-Cookie", authCookie(token));
+
         res.json({
             message: "Login successful",
             token
@@ -182,6 +186,21 @@ router.post("/login", async (req, res) => {
             error: "Failed to login"
         });
     }
+});
+
+router.get("/me", auth, (req, res) => {
+    res.json({
+        user: {
+            id: req.user.id,
+            username: req.user.username,
+            role: req.user.role
+        }
+    });
+});
+
+router.post("/logout", (req, res) => {
+    res.setHeader("Set-Cookie", authCookie("", 0));
+    res.json({ message: "Logout successful" });
 });
 
 module.exports = router;

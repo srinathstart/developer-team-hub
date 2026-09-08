@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import apiFetch from "../api";
 
 const statItems = [
     ["total_projects", "Total projects"],
@@ -19,20 +20,9 @@ function DashboardStats({ refreshKey }) {
         let active = true;
 
         async function loadStats() {
-            const token = localStorage.getItem("token");
-
-            if (!token) {
-                return;
-            }
-
             try {
-                const response = await fetch(
-                    `${import.meta.env.VITE_API_URL}/dashboard/stats`,
-                    {
-                        headers: {
-                            Authorization: `Bearer ${token}`
-                        }
-                    }
+                const response = await apiFetch(
+                    `${import.meta.env.VITE_API_URL}/dashboard/stats`
                 );
                 const data = await response.json();
 

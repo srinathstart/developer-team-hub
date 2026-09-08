@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
+import apiFetch from "../api";
 
 function Register() {
     const navigate = useNavigate();
@@ -12,7 +13,7 @@ function Register() {
         e.preventDefault();
         setError("");
 
-        const response = await fetch(`${import.meta.env.VITE_API_URL}/auth/register`, {           
+        const response = await apiFetch(`${import.meta.env.VITE_API_URL}/auth/register`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json"

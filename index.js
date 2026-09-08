@@ -14,12 +14,14 @@ const authRouter = require("./routes/auth");
 const memberRouter = require("./routes/members");
 const activityRouter = require("./routes/activity");
 const dashboardRouter = require("./routes/dashboard");
+const adminRouter = require("./routes/admin");
 
 
 const app = express();
 
 app.use(cors({
-    origin: process.env.FRONTEND_URL
+    origin: process.env.FRONTEND_URL,
+    credentials: true
 }));
 
 
@@ -51,6 +53,7 @@ app.use("/projects", projectRouter);
 app.use("/", taskRouter);
 app.use("/", activityRouter);
 app.use("/dashboard", dashboardRouter);
+app.use("/admin", adminRouter);
 
 app.use(errorHandler);
 

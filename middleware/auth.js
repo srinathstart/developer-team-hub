@@ -1,15 +1,19 @@
 const jwt = require("jsonwebtoken");
+const { parseCookies } = require("../utils/cookies");
 
 function auth(req, res, next) {
     const authHeader = req.headers.authorization;
+    const cookieToken = parseCookies(req.headers.cookie).token;
+    const bearerToken = authHeader?.startsWith("Bearer ")
+        ? authHeader.slice(7)
+        : null;
+    const token = cookieToken || bearerToken;
 
-    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    if (!token) {
         return res.status(401).json({
             error: "Authentication required"
         });
     }
-
-    const token = authHeader.split(" ")[1];
 
     try {
         const decoded = jwt.verify(token, process.env.JWT_SECRET);

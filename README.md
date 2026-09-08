@@ -10,7 +10,7 @@ Users can create projects, invite registered users as members, assign roles and 
 
 - Register and log in with a username and password
 - Passwords are hashed with bcrypt
-- Protected API routes use JSON Web Tokens (JWT)
+- Protected API routes use JSON Web Tokens (JWT) in HttpOnly cookies
 - Usernames are trimmed and authentication input is validated
 - Authenticated WebSocket connections
 - Project events are sent only to the project owner, its members, and administrators
@@ -278,14 +278,14 @@ Normal registration always creates a user with the `user` role. The application 
 | Route | Purpose |
 | --- | --- |
 | `/register` | Create a user account |
-| `/login` | Log in and save the JWT in `localStorage` |
+| `/login` | Log in and receive an HttpOnly authentication cookie |
 | `/projects` | View the authenticated project dashboard |
 
 If a token is missing or rejected, the projects page redirects to `/login`.
 
 ## API Overview
 
-Except for registration, login, the root route, and the health check, API requests require this header:
+Except for registration, login, the root route, and the health check, browser API requests use the HttpOnly authentication cookie automatically. Non-browser API clients can also authenticate with this header:
 
 ```text
 Authorization: Bearer <token>
@@ -396,7 +396,7 @@ projectUpdated
 projectDeleted
 ```
 
-The browser adds the current JWT when opening the WebSocket. The backend verifies it before accepting the connection and sends each event only to administrators, the project owner, and current project members.
+The browser automatically sends its HttpOnly cookie when opening the WebSocket. The backend verifies the JWT inside it before accepting the connection and sends each event only to administrators, the project owner, and current project members.
 
 ```text
 Project HTTP request
@@ -433,8 +433,7 @@ By default, it uses `developer_team_hub_test`. That database must exist and cont
 
 This is a learning project, not a production-ready application.
 
-- JWTs are stored in browser `localStorage`.
-- The WebSocket sends the JWT in its connection URL because the browser WebSocket API cannot set a custom authorization header.
+- Cookie-based authentication still needs additional CSRF review if the frontend and backend are later deployed on different sites.
 - There is no password reset or email verification.
 - There is no dedicated administrator-management interface.
 - Frontend error handling and accessibility can be improved.

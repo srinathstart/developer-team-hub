@@ -1,5 +1,6 @@
 const jwt = require("jsonwebtoken");
 const WebSocket = require("ws");
+const { parseCookies } = require("./utils/cookies");
 
 function getTokenFromRequest(request) {
     const url = new URL(
@@ -7,7 +8,10 @@ function getTokenFromRequest(request) {
         `http://${request.headers.host || "localhost"}`
     );
 
-    return url.searchParams.get("token");
+    return (
+        parseCookies(request.headers.cookie).token ||
+        url.searchParams.get("token")
+    );
 }
 
 function authenticateRequest(request) {

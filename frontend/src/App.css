@@ -382,6 +382,203 @@ form {
     color: #111827;
 }
 
+.header-actions,
+.hub-nav,
+.admin-identity {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.hub-nav a,
+.admin-nav-link {
+    color: #4b5563;
+    font-size: 13px;
+    font-weight: 600;
+    text-decoration: none;
+}
+
+.hub-nav a.active,
+.admin-nav-link {
+    color: #4f46e5;
+}
+
+.admin-identity {
+    padding: 7px 10px;
+    border-radius: 999px;
+    background: #ecfdf5;
+    color: #047857;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.admin-loading {
+    padding: 32px;
+    color: #6b7280;
+}
+
+.admin-body {
+    max-width: 1240px;
+}
+
+.admin-title-row h1 {
+    margin: 0 0 6px;
+    color: #111827;
+    font-size: 30px;
+}
+
+.admin-title-row p {
+    margin: 0;
+    color: #6b7280;
+}
+
+.admin-search {
+    margin: 24px 0 20px;
+    max-width: 420px;
+}
+
+.admin-feedback {
+    padding: 10px 12px;
+    border-radius: 8px;
+    font-size: 13px;
+}
+
+.admin-feedback.error {
+    background: #fef2f2;
+    color: #b91c1c;
+}
+
+.admin-feedback.success {
+    background: #ecfdf5;
+    color: #047857;
+}
+
+.admin-card {
+    overflow: hidden;
+    margin-bottom: 22px;
+    border: 1px solid #e5e7eb;
+    border-radius: 14px;
+    background: #ffffff;
+    box-shadow: 0 4px 16px rgba(15, 23, 42, 0.04);
+}
+
+.admin-user-grid {
+    display: grid;
+    grid-template-columns: minmax(180px, 1.4fr) minmax(120px, .8fr)
+        minmax(150px, 1fr) minmax(130px, .8fr);
+    align-items: center;
+    gap: 18px;
+    padding: 14px 20px;
+}
+
+.admin-table-header {
+    color: #374151;
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.admin-user-row {
+    border-top: 1px solid #e5e7eb;
+    color: #111827;
+    font-size: 13px;
+}
+
+.admin-user-row small {
+    display: block;
+    margin-top: 3px;
+    color: #9ca3af;
+}
+
+.admin-role-badge {
+    justify-self: start;
+    padding: 5px 9px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: capitalize;
+}
+
+.admin-role-badge.admin {
+    background: #d1fae5;
+    color: #047857;
+}
+
+.admin-role-badge.user {
+    background: #f3f4f6;
+    color: #4b5563;
+}
+
+.admin-role-select {
+    padding: 8px 10px;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    background: #ffffff;
+    color: #111827;
+}
+
+.admin-update-button {
+    justify-content: center;
+}
+
+.admin-update-button:disabled {
+    cursor: not-allowed;
+    background: #f3f4f6;
+    color: #9ca3af;
+}
+
+.admin-audit-card {
+    padding: 20px;
+}
+
+.admin-audit-card h2 {
+    margin: 0 0 14px;
+    color: #111827;
+    font-size: 18px;
+}
+
+.audit-entry {
+    display: flex;
+    gap: 12px;
+    padding: 13px 0;
+    border-top: 1px solid #eef0f3;
+    color: #4f46e5;
+}
+
+.audit-entry p {
+    margin: 0 0 4px;
+    color: #374151;
+    font-size: 13px;
+}
+
+.audit-entry time,
+.admin-empty {
+    color: #9ca3af;
+    font-size: 12px;
+}
+
+.admin-empty {
+    padding: 18px 20px;
+}
+
+@media (max-width: 760px) {
+    .hub-nav,
+    .admin-identity {
+        display: none;
+    }
+
+    .admin-table-header {
+        display: none;
+    }
+
+    .admin-user-grid {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .admin-update-button {
+        width: 100%;
+    }
+}
+
 .toolbar {
     display: flex;
     align-items: center;

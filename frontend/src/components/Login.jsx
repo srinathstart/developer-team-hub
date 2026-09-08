@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
+import apiFetch from "../api";
 
 function Login() {
     const navigate = useNavigate();
@@ -12,7 +13,7 @@ function Login() {
         e.preventDefault();
         setError("");
 
-        const response = await fetch(`${import.meta.env.VITE_API_URL}/auth/login`, {
+        const response = await apiFetch(`${import.meta.env.VITE_API_URL}/auth/login`, {
             method: "POST",
             headers: {
                 "Content-Type": "application/json"
@@ -26,7 +27,6 @@ function Login() {
         const data = await response.json();
 
         if (response.ok) {
-            localStorage.setItem("token", data.token);
             navigate("/projects");
         } else {
             setError(data.error || "Login failed");

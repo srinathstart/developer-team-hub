@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import apiFetch from "../api";
 import ProjectForm from "./ProjectForm";
 import ProjectItem from "./ProjectItem";
 import TaskList from "./TaskList";
@@ -15,29 +16,6 @@ import {
     Plus,
     ChevronDown
 } from "lucide-react";
-
-function getCurrentUser() {
-    const token = localStorage.getItem("token");
-
-    if (!token) {
-        return null;
-    }
-
-    try {
-        const payload = token.split(".")[1]
-            .replace(/-/g, "+")
-            .replace(/_/g, "/");
-        const normalizedPayload = payload.padEnd(
-            Math.ceil(payload.length / 4) * 4,
-            "="
-        );
-
-        return JSON.parse(atob(normalizedPayload));
-    } catch {
-        return null;
-    }
-}
-
 
 function Projects() {
     const [projects, setProjects] = useState([]);
@@ -73,18 +51,32 @@ function Projects() {
     const navigate = useNavigate();
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
-    const currentUser = getCurrentUser();
+    const [currentUser, setCurrentUser] = useState(null);
+
+    useEffect(() => {
+        async function loadCurrentUser() {
+            try {
+                const response = await apiFetch(
+                    `${import.meta.env.VITE_API_URL}/auth/me`
+                );
+
+                if (!response.ok) {
+                    navigate("/login");
+                    return;
+                }
+
+                const data = await response.json();
+                setCurrentUser(data.user);
+            } catch {
+                navigate("/login");
+            }
+        }
+
+        loadCurrentUser();
+    }, [navigate]);
 
     useEffect(() => {
         async function getProjects() {
-            const token = localStorage.getItem("token");
-
-            if (!token) {
-                navigate("/login");
-                return;
-            }
-
-
             const params = new URLSearchParams({ sort: sortOrder });
 
             if (statusFilter !== "all") {
@@ -95,13 +87,8 @@ function Projects() {
             setLoading(true);
 
             try {
-                const response = await fetch(
-                    `${import.meta.env.VITE_API_URL}/projects?${params.toString()}`,
-                    {
-                        headers: {
-                            Authorization: `Bearer ${token}`
-                        }
-                    }
+                const response = await apiFetch(
+                    `${import.meta.env.VITE_API_URL}/projects?${params.toString()}`
                 );
 
                 const data = await response.json();
@@ -109,7 +96,6 @@ function Projects() {
                 if (response.ok) {
                     setProjects(data);
                 } else if (response.status === 401) {
-                    localStorage.removeItem("token");
                     navigate("/login");
                 } else {
                     setError(data.error || "Failed to load projects");
@@ -125,16 +111,11 @@ function Projects() {
     }, [navigate, sortOrder, statusFilter]);
 
     useEffect(() => {
-        const token = localStorage.getItem("token");
-
-        if (!token) {
+        if (!currentUser) {
             return undefined;
         }
 
-        const socketUrl = new URL(import.meta.env.VITE_WS_URL);
-        socketUrl.searchParams.set("token", token);
-
-        const socket = new WebSocket(socketUrl.toString());
+        const socket = new WebSocket(import.meta.env.VITE_WS_URL);
 
         socket.onopen = () => {
             console.log("WebSocket connected");
@@ -194,22 +175,23 @@ function Projects() {
         return () => {
             socket.close();
         };
-    }, [currentUser?.id, currentUser?.role, sortOrder, statusFilter]);
+    }, [currentUser, sortOrder, statusFilter]);
 
-    function handleLogout() {
-        localStorage.removeItem("token");
+    async function handleLogout() {
+        await apiFetch(
+            `${import.meta.env.VITE_API_URL}/auth/logout`,
+            { method: "POST" }
+        );
         navigate("/login");
     }
 
     async function handleCreateProject(projectData) {
-    const token = localStorage.getItem("token");
     setError("");
 
-    const response = await fetch(`${import.meta.env.VITE_API_URL}/projects`, {
+    const response = await apiFetch(`${import.meta.env.VITE_API_URL}/projects`, {
         method: "POST",
         headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`
+            "Content-Type": "application/json"
         },
         body: JSON.stringify(projectData)
     });
@@ -259,16 +241,14 @@ function cancelEditingTask() {
 }
 
     async function handleEditProject(id) {
-        const token = localStorage.getItem("token");
         setError("");
 
-        const response = await fetch(
+        const response = await apiFetch(
             `${import.meta.env.VITE_API_URL}/projects/${id}`,
             {
                 method: "PATCH",
                 headers: {
-                    "Content-Type": "application/json",
-                    Authorization: `Bearer ${token}`
+                    "Content-Type": "application/json"
                 },
                 body: JSON.stringify({
                     name: editName,
@@ -294,15 +274,12 @@ function cancelEditingTask() {
     }
 
     async function handleDeleteProject(id) {
-        const token = localStorage.getItem("token");
         setError("");
-        const response = await fetch(
+        const response = await apiFetch(
             `${import.meta.env.VITE_API_URL}/projects/${id}`,
             {
                 method: "DELETE",
-                headers: {
-                    Authorization: `Bearer ${token}`
-                }
+
             }
         );
 
@@ -324,17 +301,10 @@ async function handleViewTasks(projectId) {
         setTaskStatusFilter("all");
         return;
     }
-
-    const token = localStorage.getItem("token");
     setError("");
 
-    const response = await fetch(
-        `${import.meta.env.VITE_API_URL}/projects/${projectId}/tasks`,
-        {
-            headers: {
-                Authorization: `Bearer ${token}`
-            }
-        }
+    const response = await apiFetch(
+        `${import.meta.env.VITE_API_URL}/projects/${projectId}/tasks`
     );
 
     const data = await response.json();
@@ -349,13 +319,8 @@ async function handleViewTasks(projectId) {
             (currentProject) => currentProject.id === projectId
         );
 
-        const membersResponse = await fetch(
-            `${import.meta.env.VITE_API_URL}/projects/${projectId}/members`,
-            {
-                headers: {
-                    Authorization: `Bearer ${token}`
-                }
-            }
+        const membersResponse = await apiFetch(
+            `${import.meta.env.VITE_API_URL}/projects/${projectId}/members`
         );
 
         const projectMembers = membersResponse.ok
@@ -390,7 +355,6 @@ async function handleViewTasks(projectId) {
 }
 
 async function handleTaskFilterChange(priority, status) {
-    const token = localStorage.getItem("token");
     const params = new URLSearchParams();
 
     if (priority !== "all") {
@@ -407,13 +371,8 @@ async function handleTaskFilterChange(priority, status) {
 
     try {
         const query = params.toString();
-        const response = await fetch(
-            `${import.meta.env.VITE_API_URL}/projects/${selectedProjectId}/tasks${query ? `?${query}` : ""}`,
-            {
-                headers: {
-                    Authorization: `Bearer ${token}`
-                }
-            }
+        const response = await apiFetch(
+            `${import.meta.env.VITE_API_URL}/projects/${selectedProjectId}/tasks${query ? `?${query}` : ""}`
         );
 
         const data = await response.json();
@@ -429,16 +388,14 @@ async function handleTaskFilterChange(priority, status) {
 }
 
 async function handleCreateTask(taskData) {
-    const token = localStorage.getItem("token");
     setError("");
 
-    const response = await fetch(
+    const response = await apiFetch(
         `${import.meta.env.VITE_API_URL}/projects/${selectedProjectId}/tasks`,
         {
             method: "POST",
             headers: {
-                "Content-Type": "application/json",
-                Authorization: `Bearer ${token}`
+                "Content-Type": "application/json"
             },
             body: JSON.stringify(taskData)
         }
@@ -467,16 +424,14 @@ async function handleCreateTask(taskData) {
 }
 
 async function handleEditTask(id) {
-    const token = localStorage.getItem("token");
     setError("");
 
-    const response = await fetch(
+    const response = await apiFetch(
         `${import.meta.env.VITE_API_URL}/tasks/${id}`,
         {
             method: "PATCH",
             headers: {
-                "Content-Type": "application/json",
-                Authorization: `Bearer ${token}`
+                "Content-Type": "application/json"
             },
             body: JSON.stringify({
                 title: editTaskTitle,
@@ -512,16 +467,13 @@ async function handleEditTask(id) {
 }
 
 async function handleDeleteTask(id) {
-    const token = localStorage.getItem("token");
     setError("");
 
-    const response = await fetch(
+    const response = await apiFetch(
         `${import.meta.env.VITE_API_URL}/tasks/${id}`,
         {
             method: "DELETE",
-            headers: {
-                Authorization: `Bearer ${token}`
-            }
+
         }
     );
 
@@ -538,16 +490,10 @@ async function handleDeleteTask(id) {
 }
 
 async function loadMembers(projectId) {
-    const token = localStorage.getItem("token");
     setError("");
 
-    const response = await fetch(
-        `${import.meta.env.VITE_API_URL}/projects/${projectId}/members`,
-        {
-            headers: {
-                Authorization: `Bearer ${token}`
-            }
-        }
+    const response = await apiFetch(
+        `${import.meta.env.VITE_API_URL}/projects/${projectId}/members`
     );
 
     const data = await response.json();
@@ -571,16 +517,14 @@ async function handleViewMembers(projectId) {
 }
 
 async function handleAddMember(username, role) {
-    const token = localStorage.getItem("token");
     setError("");
 
-    const response = await fetch(
+    const response = await apiFetch(
         `${import.meta.env.VITE_API_URL}/projects/${selectedMembersProjectId}/members`,
         {
             method: "POST",
             headers: {
-                "Content-Type": "application/json",
-                Authorization: `Bearer ${token}`
+                "Content-Type": "application/json"
             },
             body: JSON.stringify({
                 username,
@@ -599,16 +543,13 @@ async function handleAddMember(username, role) {
 }
 
 async function handleRemoveMember(userId) {
-    const token = localStorage.getItem("token");
     setError("");
 
-    const response = await fetch(
+    const response = await apiFetch(
         `${import.meta.env.VITE_API_URL}/projects/${selectedMembersProjectId}/members/${userId}`,
         {
             method: "DELETE",
-            headers: {
-                Authorization: `Bearer ${token}`
-            }
+
         }
     );
 
@@ -622,16 +563,14 @@ async function handleRemoveMember(userId) {
 }
 
 async function handleUpdateMemberRole(userId, role) {
-    const token = localStorage.getItem("token");
     setError("");
 
-    const response = await fetch(
+    const response = await apiFetch(
         `${import.meta.env.VITE_API_URL}/projects/${selectedMembersProjectId}/members/${userId}`,
         {
             method: "PATCH",
             headers: {
-                "Content-Type": "application/json",
-                Authorization: `Bearer ${token}`
+                "Content-Type": "application/json"
             },
             body: JSON.stringify({ role })
         }
@@ -652,21 +591,14 @@ async function handleViewActivity(projectId) {
         setActivities([]);
         return;
     }
-
-    const token = localStorage.getItem("token");
     setError("");
     setSelectedActivityProjectId(projectId);
     setActivities([]);
     setActivityLoading(true);
 
     try {
-        const response = await fetch(
-            `${import.meta.env.VITE_API_URL}/projects/${projectId}/activity`,
-            {
-                headers: {
-                    Authorization: `Bearer ${token}`
-                }
-            }
+        const response = await apiFetch(
+            `${import.meta.env.VITE_API_URL}/projects/${projectId}/activity`
         );
 
         const data = await response.json();
@@ -707,13 +639,18 @@ const filteredProjects = projects.filter((project) => {
                 </span>
             </div>
 
-            <button
-                className="logout-btn"
-                onClick={handleLogout}
-            >
-                <LogOut size={14} />
-                Log out
-            </button>
+            <div className="header-actions">
+                {currentUser?.role === "admin" && (
+                    <Link className="admin-nav-link" to="/admin">Admin</Link>
+                )}
+                <button
+                    className="logout-btn"
+                    onClick={handleLogout}
+                >
+                    <LogOut size={14} />
+                    Log out
+                </button>
+            </div>
         </header>
 
         <main className="hub-body">
