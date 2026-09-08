@@ -436,7 +436,6 @@ This is a learning project, not a production-ready application.
 - Cookie-based authentication still needs additional CSRF review if the frontend and backend are later deployed on different sites.
 - There is no password reset or email verification.
 - A formal WCAG audit with browser accessibility tools and assistive technology has not been completed.
-- The main `Projects.jsx` component is large and should be split into smaller hooks/components.
 - Deployment, Docker, and CI/CD are not configured yet.
 
 ## Concepts Practised
