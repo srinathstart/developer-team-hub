@@ -8,33 +8,45 @@ function Login() {
     const [username, setUsername] = useState("");
     const [password, setPassword] = useState("");
     const [error, setError] = useState("");
+    const [submitting, setSubmitting] = useState(false);
 
     async function handleSubmit(e) {
         e.preventDefault();
+
+        if (submitting) {
+            return;
+        }
+
         setError("");
+        setSubmitting(true);
 
-        const response = await apiFetch(`${import.meta.env.VITE_API_URL}/auth/login`, {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify({
-                username,
-                password
-            })
-        });
+        try {
+            const response = await apiFetch(`${import.meta.env.VITE_API_URL}/auth/login`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    username,
+                    password
+                })
+            });
 
-        const data = await response.json();
+            const data = await response.json();
 
-        if (response.ok) {
-            navigate("/projects");
-        } else {
-            setError(data.error || "Login failed");
+            if (response.ok) {
+                navigate("/projects");
+            } else {
+                setError(data.error || "Login failed");
+            }
+        } finally {
+            setSubmitting(false);
         }
     }
 
     return (
     <div className="auth-page">
+        <a className="skip-link" href="#main-content">Skip to main content</a>
         <div className="auth-container">
             <div className="auth-brand-panel">
                 <div>
@@ -49,7 +61,7 @@ function Login() {
                     </p>
                 </div>
 
-                <div className="auth-illustration">
+                <div className="auth-illustration" aria-hidden="true">
                     <div className="node node-center"></div>
                     <div className="node node-one"></div>
                     <div className="node node-two"></div>
@@ -62,9 +74,10 @@ function Login() {
                 </p>
             </div>
 
-            <div className="auth-form-panel">
+            <main className="auth-form-panel" id="main-content" tabIndex="-1">
                 <form
                     className="auth-form"
+                    aria-busy={submitting}
                     onSubmit={handleSubmit}
                 >
                     <h1>Sign in</h1>
@@ -81,6 +94,9 @@ function Login() {
                         id="username"
                         type="text"
                         placeholder="jane.doe"
+                        autoComplete="username"
+                        required
+                        aria-describedby={error ? "login-error" : undefined}
                         value={username}
                         onChange={(e) =>
                             setUsername(e.target.value)
@@ -95,6 +111,9 @@ function Login() {
                         id="password"
                         type="password"
                         placeholder="••••••••"
+                        autoComplete="current-password"
+                        required
+                        aria-describedby={error ? "login-error" : undefined}
                         value={password}
                         onChange={(e) =>
                             setPassword(e.target.value)
@@ -102,7 +121,7 @@ function Login() {
                     />
 
                     {error && (
-                        <p className="auth-error">
+                        <p className="auth-error" id="login-error" role="alert">
                             {error}
                         </p>
                     )}
@@ -110,8 +129,9 @@ function Login() {
                     <button
                         className="auth-submit"
                         type="submit"
+                        disabled={submitting}
                     >
-                        Log in
+                        {submitting ? "Logging in..." : "Log in"}
                     </button>
 
                     <p className="auth-switch">
@@ -121,7 +141,7 @@ function Login() {
                         </Link>
                     </p>
                 </form>
-            </div>
+            </main>
         </div>
     </div>
 );

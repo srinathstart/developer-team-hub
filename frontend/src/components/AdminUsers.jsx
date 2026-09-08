@@ -127,10 +127,11 @@ function AdminUsers() {
         navigate("/login");
     }
 
-    if (loading) return <p className="admin-loading">Loading admin page...</p>;
+    if (loading) return <p className="admin-loading" role="status">Loading admin page...</p>;
 
     return (
         <div className="projects-page">
+            <a className="skip-link" href="#main-content">Skip to main content</a>
             <header className="hub-header">
                 <div className="brand">
                     <div className="brand-mark">DH</div>
@@ -138,20 +139,20 @@ function AdminUsers() {
                 </div>
                 <nav className="hub-nav" aria-label="Main navigation">
                     <Link to="/projects">Projects</Link>
-                    <Link className="active" to="/admin">Admin</Link>
+                    <Link className="active" to="/admin" aria-current="page">Admin</Link>
                 </nav>
                 <div className="header-actions">
                     <span className="admin-identity">
                         <ShieldCheck size={15} />
                         {currentUser?.username}
                     </span>
-                    <button className="logout-btn" onClick={handleLogout}>
+                    <button className="logout-btn" type="button" onClick={handleLogout}>
                         <LogOut size={14} /> Log out
                     </button>
                 </div>
             </header>
 
-            <main className="hub-body admin-body">
+            <main className="hub-body admin-body" id="main-content" tabIndex="-1">
                 <div className="admin-title-row">
                     <div>
                         <h1>User management</h1>
@@ -163,15 +164,17 @@ function AdminUsers() {
                     <Search size={15} />
                     <input className="search-input" type="search"
                         placeholder="Search users by username"
+                        aria-label="Search users by username"
                         value={searchTerm}
                         onChange={(event) => setSearchTerm(event.target.value)} />
                 </div>
 
-                {error && <p className="admin-feedback error">{error}</p>}
-                {message && <p className="admin-feedback success">{message}</p>}
+                {error && <p className="admin-feedback error" role="alert">{error}</p>}
+                {message && <p className="admin-feedback success" role="status">{message}</p>}
 
-                <section className="admin-card admin-users-card">
-                    <div className="admin-table-header admin-user-grid">
+                <section className="admin-card admin-users-card" aria-labelledby="user-management-table-heading">
+                    <h2 className="sr-only" id="user-management-table-heading">User roles</h2>
+                    <div className="admin-table-header admin-user-grid" aria-hidden="true">
                         <span>User</span><span>Current role</span>
                         <span>Change role</span><span>Action</span>
                     </div>
@@ -189,6 +192,7 @@ function AdminUsers() {
                                     {user.role}
                                 </span>
                                 <select className="admin-role-select"
+                                    aria-label={`New role for ${user.username}`}
                                     value={selectedRoles[user.id]}
                                     disabled={isCurrentUser}
                                     onChange={(event) => setSelectedRoles((roles) => ({
@@ -199,6 +203,7 @@ function AdminUsers() {
                                     <option value="admin">Admin</option>
                                 </select>
                                 <button className="btn-primary admin-update-button"
+                                    type="button"
                                     disabled={isCurrentUser || !hasChange || updatingUserId === user.id}
                                     onClick={() => handleRoleUpdate(user)}>
                                     {isCurrentUser ? "Your account" :
@@ -222,7 +227,9 @@ function AdminUsers() {
                                 <p><strong>{entry.actor_username || "Deleted user"}</strong>{" "}
                                     changed <strong>{entry.target_username || "Deleted user"}</strong>{" "}
                                     from {entry.previous_role} to {entry.new_role}</p>
-                                <time>{new Date(entry.created_at).toLocaleString()}</time>
+                                <time dateTime={entry.created_at}>
+                                    {new Date(entry.created_at).toLocaleString()}
+                                </time>
                             </div>
                         </div>
                     ))}

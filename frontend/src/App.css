@@ -285,6 +285,11 @@ form {
     background: #4338ca;
 }
 
+.auth-submit:disabled {
+    cursor: not-allowed;
+    opacity: 0.65;
+}
+
 .auth-switch {
     margin-top: 18px;
     text-align: center;
@@ -486,7 +491,7 @@ form {
 .admin-user-row small {
     display: block;
     margin-top: 3px;
-    color: #9ca3af;
+    color: #6b7280;
 }
 
 .admin-role-badge {
@@ -552,7 +557,7 @@ form {
 
 .audit-entry time,
 .admin-empty {
-    color: #9ca3af;
+    color: #6b7280;
     font-size: 12px;
 }
 
@@ -657,6 +662,12 @@ form {
 
 .btn-primary:hover {
     background: #4338ca;
+}
+
+.btn-primary:disabled,
+.btn-secondary:disabled {
+    cursor: not-allowed;
+    opacity: 0.65;
 }
 
 .search-wrap {
@@ -1030,7 +1041,7 @@ form {
 
 .ownership-tag.shared {
     background: #f3f4f6;
-    color: #6b7280;
+    color: #4b5563;
 }
 
 .card-due {
@@ -1127,6 +1138,23 @@ form {
     min-width: 130px;
 }
 
+.inline-form-error {
+    flex-basis: 100%;
+    margin: 0;
+    color: #dc2626;
+    font-size: 0.875rem;
+}
+
+.project-edit-error,
+.project-delete-error,
+.project-create-error,
+.project-task-load-error,
+.project-member-load-error {
+    margin: 0;
+    color: #dc2626;
+    font-size: 0.875rem;
+}
+
 .task-section {
     display: flex;
     flex-direction: column;
@@ -1164,6 +1192,10 @@ form {
     flex-wrap: wrap;
 }
 
+.task-row.has-error {
+    flex-wrap: wrap;
+}
+
 .task-row.editing > .text-input {
     flex: 1 1 100%;
 }
@@ -1175,6 +1207,20 @@ form {
 .task-row.editing > .select-input {
     flex: 1 1 130px;
     min-width: 0;
+}
+
+.task-edit-error {
+    flex: 1 1 100%;
+    margin: 0;
+    color: #dc2626;
+    font-size: 0.75rem;
+}
+
+.task-delete-error {
+    flex: 1 1 100%;
+    margin: 0;
+    color: #dc2626;
+    font-size: 0.75rem;
 }
 
 .task-row.editing > .task-row-actions {
@@ -1247,7 +1293,7 @@ form {
 
 .task-status.todo {
     background: #f3f4f6;
-    color: #6b7280;
+    color: #4b5563;
 }
 
 .task-status.in-progress {
@@ -1312,7 +1358,7 @@ form {
     margin: 0;
     padding: 4px 2px;
 
-    color: #9ca3af;
+    color: #6b7280;
     font-size: 12.5px;
 }
 
@@ -1334,6 +1380,19 @@ form {
     background: #ffffff;
     border: 1px solid #e5e7eb;
     border-radius: 12px;
+    flex-wrap: wrap;
+}
+
+.task-filter-loading {
+    color: #6b7280;
+    font-size: 0.75rem;
+}
+
+.task-filter-error {
+    flex-basis: 100%;
+    margin: 0;
+    color: #dc2626;
+    font-size: 0.75rem;
 }
 
 @media (max-width: 700px) {
@@ -1357,6 +1416,12 @@ form {
     display: flex;
     flex-direction: column;
     gap: 6px;
+}
+
+.activity-error {
+    margin: 0;
+    color: #dc2626;
+    font-size: 0.875rem;
 }
 
 .activity-row {
@@ -1383,7 +1448,7 @@ form {
 
 .activity-time {
     flex-shrink: 0;
-    color: #9ca3af;
+    color: #6b7280;
     font-size: 11px;
 }
 
@@ -1481,6 +1546,17 @@ form {
     color: #374151;
 }
 
+.member-saving {
+    color: #6b7280;
+    font-size: 0.75rem;
+}
+
+.member-role-error,
+.member-remove-error {
+    color: #dc2626;
+    font-size: 0.75rem;
+}
+
 .member-role.viewer {
     background: #f3f4f6;
     color: #4b5563;
@@ -1549,5 +1625,60 @@ form {
 
     .task-row {
         align-items: flex-start;
+    }
+}
+/* Shared accessibility helpers */
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+.skip-link {
+    position: fixed;
+    top: 8px;
+    left: 8px;
+    z-index: 1000;
+    padding: 10px 14px;
+    border-radius: 8px;
+    background: #111827;
+    color: #ffffff;
+    transform: translateY(-150%);
+}
+
+.skip-link:focus {
+    transform: translateY(0);
+}
+
+input::placeholder,
+textarea::placeholder {
+    color: #6b7280;
+    opacity: 1;
+}
+
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+.auth-form input:focus-visible {
+    outline: 3px solid #4f46e5;
+    outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        scroll-behavior: auto !important;
+        transition-duration: 0.01ms !important;
     }
 }

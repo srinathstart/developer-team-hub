@@ -6,31 +6,51 @@ function TaskForm({ onCreateTask, members }) {
     const [priority, setPriority] = useState("medium");
     const [assigneeUsername, setAssigneeUsername] = useState("");
     const [dueDate, setDueDate] = useState("");
+    const [submitting, setSubmitting] = useState(false);
+    const [createError, setCreateError] = useState("");
 
     async function handleSubmit(e) {
         e.preventDefault();
 
-        await onCreateTask({
-            title,
-            status,
-            priority,
-            assigneeUsername: assigneeUsername || null,
-            due_date: dueDate || null
-        });
+        if (submitting) {
+            return;
+        }
 
-        setTitle("");
-        setStatus("todo");
-        setPriority("medium");
-        setAssigneeUsername("");
-        setDueDate("");
+        setCreateError("");
+        setSubmitting(true);
+
+        try {
+            const result = await onCreateTask({
+                title,
+                status,
+                priority,
+                assigneeUsername: assigneeUsername || null,
+                due_date: dueDate || null
+            });
+
+            if (!result.success) {
+                setCreateError(result.error);
+                return;
+            }
+
+            setTitle("");
+            setStatus("todo");
+            setPriority("medium");
+            setAssigneeUsername("");
+            setDueDate("");
+        } finally {
+            setSubmitting(false);
+        }
     }
 
     return (
-    <form className="inline-form" onSubmit={handleSubmit}>
+    <form className="inline-form" aria-busy={submitting} onSubmit={handleSubmit}>
         <input
             className="text-input"
             id="task-title"
             type="text"
+            aria-label="Task title"
+            required
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             placeholder="New task title"
@@ -39,6 +59,7 @@ function TaskForm({ onCreateTask, members }) {
         <select
             className="select-input"
             id="task-status"
+            aria-label="Task status"
             value={status}
             onChange={(e) => setStatus(e.target.value)}
         >
@@ -81,9 +102,15 @@ function TaskForm({ onCreateTask, members }) {
             onChange={(e) => setDueDate(e.target.value)}
         />
 
-        <button className="btn-primary" type="submit">
-            Add Task
+        <button className="btn-primary" type="submit" disabled={submitting}>
+            {submitting ? "Adding..." : "Add Task"}
         </button>
+
+        {createError && (
+            <p className="inline-form-error" role="alert">
+                {createError}
+            </p>
+        )}
     </form>
 );
 }

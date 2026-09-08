@@ -8,12 +8,20 @@ function Register() {
     const [username, setUsername] = useState("");
     const [password, setPassword] = useState("");
     const [error, setError] = useState("");
+    const [submitting, setSubmitting] = useState(false);
 
     async function handleSubmit(e) {
         e.preventDefault();
-        setError("");
 
-        const response = await apiFetch(`${import.meta.env.VITE_API_URL}/auth/register`, {
+        if (submitting) {
+            return;
+        }
+
+        setError("");
+        setSubmitting(true);
+
+        try {
+            const response = await apiFetch(`${import.meta.env.VITE_API_URL}/auth/register`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json"
@@ -23,19 +31,23 @@ function Register() {
                     password
                 })
             }
-        );
+            );
 
-        const data = await response.json();
+            const data = await response.json();
 
-        if (response.ok) {
-            navigate("/login");
-        } else {
-            setError(data.error || "Registration failed");
+            if (response.ok) {
+                navigate("/login");
+            } else {
+                setError(data.error || "Registration failed");
+            }
+        } finally {
+            setSubmitting(false);
         }
     }
 
     return (
     <div className="auth-page">
+        <a className="skip-link" href="#main-content">Skip to main content</a>
         <div className="auth-container">
             <div className="auth-brand-panel">
                 <div>
@@ -50,7 +62,7 @@ function Register() {
                     </p>
                 </div>
 
-                <div className="auth-illustration">
+                <div className="auth-illustration" aria-hidden="true">
                     <div className="node node-center"></div>
                     <div className="node node-one"></div>
                     <div className="node node-two"></div>
@@ -63,9 +75,10 @@ function Register() {
                 </p>
             </div>
 
-            <div className="auth-form-panel">
+            <main className="auth-form-panel" id="main-content" tabIndex="-1">
                 <form
                     className="auth-form"
+                    aria-busy={submitting}
                     onSubmit={handleSubmit}
                 >
                     <h1>Create an account</h1>
@@ -82,6 +95,9 @@ function Register() {
                         id="username"
                         type="text"
                         placeholder="jane.doe"
+                        autoComplete="username"
+                        required
+                        aria-describedby={error ? "register-error" : undefined}
                         value={username}
                         onChange={(e) =>
                             setUsername(e.target.value)
@@ -96,19 +112,22 @@ function Register() {
                         id="password"
                         type="password"
                         placeholder="••••••••"
+                        autoComplete="new-password"
+                        required
+                        aria-describedby={`password-help${error ? " register-error" : ""}`}
                         value={password}
                         onChange={(e) =>
                             setPassword(e.target.value)
                         }
                     />
 
-                    <p className="auth-password-help">
+                    <p className="auth-password-help" id="password-help">
                         At least 8 characters, including uppercase,
                         lowercase, and a number.
                     </p>
 
                     {error && (
-                        <p className="auth-error">
+                        <p className="auth-error" id="register-error" role="alert">
                             {error}
                         </p>
                     )}
@@ -116,8 +135,9 @@ function Register() {
                     <button
                         className="auth-submit"
                         type="submit"
+                        disabled={submitting}
                     >
-                        Register
+                        {submitting ? "Registering..." : "Register"}
                     </button>
 
                     <p className="auth-switch">
@@ -127,7 +147,7 @@ function Register() {
                         </Link>
                     </p>
                 </form>
-            </div>
+            </main>
         </div>
     </div>
 );

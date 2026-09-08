@@ -5,25 +5,48 @@ function ProjectForm({ onCreate, onCancel }) {
     const [description, setDescription] = useState("");
     const [status, setStatus] = useState("planned");
     const [dueDate, setDueDate] = useState("");
+    const [submitting, setSubmitting] = useState(false);
+    const [createError, setCreateError] = useState("");
 
     async function handleSubmit(e) {
         e.preventDefault();
 
-        await onCreate({
-            name,
-            description,
-            status,
-            due_date: dueDate || null
-        });
+        if (submitting) {
+            return;
+        }
 
-        setName("");
-        setDescription("");
-        setStatus("planned");
-        setDueDate("");
+        setCreateError("");
+        setSubmitting(true);
+
+        try {
+            const result = await onCreate({
+                name,
+                description,
+                status,
+                due_date: dueDate || null
+            });
+
+            if (!result.success) {
+                setCreateError(result.error);
+                return;
+            }
+
+            setName("");
+            setDescription("");
+            setStatus("planned");
+            setDueDate("");
+        } finally {
+            setSubmitting(false);
+        }
     }
 
     return (
-    <form className="new-project-panel" onSubmit={handleSubmit}>
+    <form
+        className="new-project-panel"
+        id="new-project-form"
+        aria-busy={submitting}
+        onSubmit={handleSubmit}
+    >
         <div className="row">
             <div className="field">
                 <label className="field-label" htmlFor="project-name">
@@ -35,6 +58,8 @@ function ProjectForm({ onCreate, onCancel }) {
                     id="project-name"
                     type="text"
                     placeholder="e.g. Notification Service"
+                    required
+                    autoFocus
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                 />
@@ -86,11 +111,18 @@ function ProjectForm({ onCreate, onCancel }) {
             />
         </div>
 
+        {createError && (
+            <p className="project-create-error" role="alert">
+                {createError}
+            </p>
+        )}
+
         <div className="panel-actions">
     <button
         className="btn-secondary"
         type="button"
         onClick={onCancel}
+        disabled={submitting}
     >
         Cancel
     </button>
@@ -98,8 +130,9 @@ function ProjectForm({ onCreate, onCancel }) {
     <button
         className="btn-primary"
         type="submit"
+        disabled={submitting}
     >
-        Create project
+        {submitting ? "Creating..." : "Create project"}
     </button>
 </div>
     </form>

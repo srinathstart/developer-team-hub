@@ -1,3 +1,4 @@
+import { useEffect, useRef } from "react";
 import {
     Pencil,
     Trash2,
@@ -18,6 +19,10 @@ function TaskList({
     setEditTaskAssignee,
     editTaskDueDate,
     setEditTaskDueDate,
+    savingTaskId,
+    editError,
+    deletingTaskId,
+    deleteError,
     members,
     startEditingTask,
     handleEditTask,
@@ -25,6 +30,17 @@ function TaskList({
     handleDeleteTask,
     canEdit
 }) {
+    const editButtonRefs = useRef(new Map());
+    const previousEditingTaskId = useRef(null);
+
+    useEffect(() => {
+        if (previousEditingTaskId.current !== null && editingTaskId === null) {
+            editButtonRefs.current.get(previousEditingTaskId.current)?.focus();
+        }
+
+        previousEditingTaskId.current = editingTaskId;
+    }, [editingTaskId]);
+
     function getTaskStatusClass(status) {
         if (status === "done") {
             return "task-status done";
@@ -89,22 +105,34 @@ function TaskList({
                 </p>
             )}
 
-            <div className="task-list">
+            <div className="task-list" role="list">
                 {tasks.map((task) => {
                     const isEditing =
                         editingTaskId === task.id;
+                    const isSaving =
+                        savingTaskId === task.id;
+                    const isDeleting =
+                        deletingTaskId === task.id;
+                    const taskDeleteMessage =
+                        deleteError?.taskId === task.id
+                            ? deleteError.message
+                            : "";
 
                     return (
                         <div
-                            className={`task-row${isEditing ? " editing" : ""}`}
+                            className={`task-row${isEditing ? " editing" : ""}${taskDeleteMessage ? " has-error" : ""}`}
                             key={task.id}
+                            role="listitem"
                         >
                             {isEditing ? (
                                 <>
                                     <input
                                         className="text-input"
                                         type="text"
+                                        aria-label="Task title"
+                                        autoFocus
                                         value={editTaskTitle}
+                                        disabled={isSaving}
                                         onChange={(e) =>
                                             setEditTaskTitle(
                                                 e.target.value
@@ -114,7 +142,9 @@ function TaskList({
 
                                     <select
                                         className="select-input"
+                                        aria-label="Task status"
                                         value={editTaskStatus}
+                                        disabled={isSaving}
                                         onChange={(e) =>
                                             setEditTaskStatus(
                                                 e.target.value
@@ -139,6 +169,7 @@ function TaskList({
                                         type="date"
                                         aria-label="Task due date"
                                         value={editTaskDueDate}
+                                        disabled={isSaving}
                                         onChange={(e) =>
                                             setEditTaskDueDate(e.target.value)
                                         }
@@ -148,6 +179,7 @@ function TaskList({
                                         className="select-input"
                                         aria-label="Task assignee"
                                         value={editTaskAssignee}
+                                        disabled={isSaving}
                                         onChange={(e) =>
                                             setEditTaskAssignee(e.target.value)
                                         }
@@ -164,6 +196,7 @@ function TaskList({
                                         className="select-input"
                                         aria-label="Task priority"
                                         value={editTaskPriority}
+                                        disabled={isSaving}
                                         onChange={(e) =>
                                             setEditTaskPriority(
                                                 e.target.value
@@ -175,26 +208,40 @@ function TaskList({
                                         <option value="high">High</option>
                                     </select>
 
+                                    {editError && (
+                                        <p className="task-edit-error" role="alert">
+                                            {editError}
+                                        </p>
+                                    )}
+
                                     {canEdit && (
                                     <div className="task-row-actions">
                                         <button
                                             className="mini-btn"
                                             type="button"
+                                            disabled={isSaving || isDeleting}
                                             onClick={() =>
                                                 handleEditTask(
                                                     task.id
                                                 )
                                             }
-                                            title="Save"
+                                            title={isSaving ? "Saving" : "Save"}
+                                            aria-label={
+                                                isSaving
+                                                    ? `Saving ${task.title}`
+                                                    : `Save changes to ${task.title}`
+                                            }
                                         >
-                                            <Check size={13} />
+                                            {isSaving ? "Saving..." : <Check size={13} />}
                                         </button>
 
                                         <button
                                             className="mini-btn"
                                             type="button"
+                                            disabled={isSaving}
                                             onClick={cancelEditingTask}
                                             title="Cancel"
+                                            aria-label={`Cancel editing ${task.title}`}
                                         >
                                             <X size={13} />
                                         </button>
@@ -202,14 +249,20 @@ function TaskList({
                                         <button
                                             className="mini-btn danger"
                                             type="button"
+                                            disabled={isSaving}
                                             onClick={() =>
                                                 handleDeleteTask(
                                                     task.id
                                                 )
                                             }
-                                            title="Delete"
+                                            title={isDeleting ? "Deleting" : "Delete"}
+                                            aria-label={
+                                                isDeleting
+                                                    ? `Deleting ${task.title}`
+                                                    : `Delete ${task.title}`
+                                            }
                                         >
-                                            <Trash2 size={13} />
+                                            {isDeleting ? "Deleting..." : <Trash2 size={13} />}
                                         </button>
                                     </div>
                                     )}
@@ -255,12 +308,18 @@ function TaskList({
                                         <button
                                             className="mini-btn"
                                             type="button"
+                                            ref={(button) => {
+                                                if (button) {
+                                                    editButtonRefs.current.set(task.id, button);
+                                                }
+                                            }}
                                             onClick={() =>
                                                 startEditingTask(
                                                     task
                                                 )
                                             }
                                             title="Edit"
+                                            aria-label={`Edit ${task.title}`}
                                         >
                                             <Pencil size={13} />
                                         </button>
@@ -268,18 +327,30 @@ function TaskList({
                                         <button
                                             className="mini-btn danger"
                                             type="button"
+                                            disabled={isDeleting}
                                             onClick={() =>
                                                 handleDeleteTask(
                                                     task.id
                                                 )
                                             }
-                                            title="Delete"
+                                            title={isDeleting ? "Deleting" : "Delete"}
+                                            aria-label={
+                                                isDeleting
+                                                    ? `Deleting ${task.title}`
+                                                    : `Delete ${task.title}`
+                                            }
                                         >
-                                            <Trash2 size={13} />
+                                            {isDeleting ? "Deleting..." : <Trash2 size={13} />}
                                         </button>
                                     </div>
                                     )}
                                 </>
+                            )}
+
+                            {taskDeleteMessage && (
+                                <p className="task-delete-error" role="alert">
+                                    {taskDeleteMessage}
+                                </p>
                             )}
                         </div>
                     );

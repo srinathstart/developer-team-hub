@@ -1,10 +1,11 @@
-function TaskFilters({ priority, status, onChange }) {
+function TaskFilters({ priority, status, onChange, loading, error }) {
     return (
-        <div className="task-filters">
+        <div className="task-filters" aria-busy={loading}>
             <select
                 className="select-input"
                 aria-label="Filter tasks by priority"
                 value={priority}
+                disabled={loading}
                 onChange={(e) =>
                     onChange(e.target.value, status)
                 }
@@ -19,6 +20,7 @@ function TaskFilters({ priority, status, onChange }) {
                 className="select-input"
                 aria-label="Filter tasks by status"
                 value={status}
+                disabled={loading}
                 onChange={(e) =>
                     onChange(priority, e.target.value)
                 }
@@ -28,6 +30,18 @@ function TaskFilters({ priority, status, onChange }) {
                 <option value="in-progress">In Progress</option>
                 <option value="done">Done</option>
             </select>
+
+            {loading && (
+                <span className="task-filter-loading" role="status">
+                    Filtering...
+                </span>
+            )}
+
+            {error && (
+                <p className="task-filter-error" role="alert">
+                    {error}
+                </p>
+            )}
         </div>
     );
 }

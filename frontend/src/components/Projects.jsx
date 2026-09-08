@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import apiFetch from "../api";
 import ProjectForm from "./ProjectForm";
@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 
 function Projects() {
+    const newProjectButtonRef = useRef(null);
     const [projects, setProjects] = useState([]);
 
     const [editingId, setEditingId] = useState(null);
@@ -25,11 +26,19 @@ function Projects() {
     const [editDescription, setEditDescription] = useState("");
     const [editStatus, setEditStatus] = useState("planned");
     const [editDueDate, setEditDueDate] = useState("");
+    const [savingProjectId, setSavingProjectId] = useState(null);
+    const [projectEditError, setProjectEditError] = useState("");
+    const [deletingProjectId, setDeletingProjectId] = useState(null);
+    const [projectDeleteError, setProjectDeleteError] = useState(null);
     const [selectedProjectId, setSelectedProjectId] = useState(null);
     const [tasks, setTasks] = useState([]);
+    const [loadingTasksProjectId, setLoadingTasksProjectId] = useState(null);
+    const [taskLoadError, setTaskLoadError] = useState(null);
     const [taskAssignees, setTaskAssignees] = useState([]);
     const [taskPriorityFilter, setTaskPriorityFilter] = useState("all");
     const [taskStatusFilter, setTaskStatusFilter] = useState("all");
+    const [taskFilterLoading, setTaskFilterLoading] = useState(false);
+    const [taskFilterError, setTaskFilterError] = useState("");
     const [projectTaskRoles, setProjectTaskRoles] = useState({});
     const [editingTaskId, setEditingTaskId] = useState(null);
     const [editTaskTitle, setEditTaskTitle] = useState("");
@@ -37,11 +46,22 @@ function Projects() {
     const [editTaskPriority, setEditTaskPriority] = useState("medium");
     const [editTaskAssignee, setEditTaskAssignee] = useState("");
     const [editTaskDueDate, setEditTaskDueDate] = useState("");
+    const [savingTaskId, setSavingTaskId] = useState(null);
+    const [taskEditError, setTaskEditError] = useState("");
+    const [deletingTaskId, setDeletingTaskId] = useState(null);
+    const [taskDeleteError, setTaskDeleteError] = useState(null);
     const [selectedMembersProjectId, setSelectedMembersProjectId] = useState(null);
     const [members, setMembers] = useState([]);
+    const [loadingMembersProjectId, setLoadingMembersProjectId] = useState(null);
+    const [memberLoadError, setMemberLoadError] = useState(null);
+    const [removingMemberId, setRemovingMemberId] = useState(null);
+    const [memberRemoveError, setMemberRemoveError] = useState(null);
+    const [updatingMemberId, setUpdatingMemberId] = useState(null);
+    const [memberRoleError, setMemberRoleError] = useState(null);
     const [selectedActivityProjectId, setSelectedActivityProjectId] = useState(null);
     const [activities, setActivities] = useState([]);
     const [activityLoading, setActivityLoading] = useState(false);
+    const [activityError, setActivityError] = useState("");
     const [searchTerm, setSearchTerm] = useState("");
     const [statusFilter, setStatusFilter] = useState("all");
     const [sortOrder, setSortOrder] = useState("newest");
@@ -200,13 +220,19 @@ function Projects() {
 
     if (response.ok) {
     setShowNewProject(false);
+    newProjectButtonRef.current?.focus();
     setStatsRefreshKey((current) => current + 1);
+    return { success: true, error: "" };
 } else {
-    setError(data.error || "Something went wrong");
+    return {
+        success: false,
+        error: data.error || "Something went wrong"
+    };
 }
 }
 
     function startEditing(project) {
+        setProjectEditError("");
         setEditingId(project.id);
         setEditName(project.name);
         setEditDescription(project.description || "");
@@ -215,6 +241,7 @@ function Projects() {
     }
 
     function startEditingTask(task) {
+    setTaskEditError("");
     setEditingTaskId(task.id);
     setEditTaskTitle(task.title);
     setEditTaskStatus(task.status);
@@ -224,6 +251,7 @@ function Projects() {
 }
 
 function cancelEditingTask() {
+    setTaskEditError("");
     setEditingTaskId(null);
     setEditTaskTitle("");
     setEditTaskStatus("todo");
@@ -233,6 +261,7 @@ function cancelEditingTask() {
 }
 
     function cancelEditing() {
+    setProjectEditError("");
     setEditingId(null);
     setEditName("");
     setEditDescription("");
@@ -241,54 +270,77 @@ function cancelEditingTask() {
 }
 
     async function handleEditProject(id) {
+        if (savingProjectId === id) {
+            return;
+        }
+
         setError("");
+        setProjectEditError("");
+        setSavingProjectId(id);
 
-        const response = await apiFetch(
-            `${import.meta.env.VITE_API_URL}/projects/${id}`,
-            {
-                method: "PATCH",
-                headers: {
-                    "Content-Type": "application/json"
-                },
-                body: JSON.stringify({
-                    name: editName,
-                    description: editDescription,
-                    status: editStatus,
-                    due_date: editDueDate || null
-                })
+        try {
+            const response = await apiFetch(
+                `${import.meta.env.VITE_API_URL}/projects/${id}`,
+                {
+                    method: "PATCH",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({
+                        name: editName,
+                        description: editDescription,
+                        status: editStatus,
+                        due_date: editDueDate || null
+                    })
+                }
+            );
+
+            const data = await response.json();
+
+            if (response.ok) {
+                setEditingId(null);
+                setEditName("");
+                setEditDescription("");
+                setEditStatus("planned");
+                setEditDueDate("");
+                setStatsRefreshKey((current) => current + 1);
+            } else {
+                setProjectEditError(data.error || "Something went wrong");
             }
-        );
-
-        const data = await response.json();
-
-        if (response.ok) {
-            setEditingId(null);
-            setEditName("");
-            setEditDescription("");
-            setEditStatus("planned");
-            setEditDueDate("");
-            setStatsRefreshKey((current) => current + 1);
-        } else {
-            setError(data.error || "Something went wrong");
+        } finally {
+            setSavingProjectId(null);
         }
     }
 
     async function handleDeleteProject(id) {
+        if (deletingProjectId === id) {
+            return;
+        }
+
         setError("");
-        const response = await apiFetch(
-            `${import.meta.env.VITE_API_URL}/projects/${id}`,
-            {
-                method: "DELETE",
+        setProjectDeleteError(null);
+        setDeletingProjectId(id);
 
+        try {
+            const response = await apiFetch(
+                `${import.meta.env.VITE_API_URL}/projects/${id}`,
+                {
+                    method: "DELETE"
+                }
+            );
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                setProjectDeleteError({
+                    projectId: id,
+                    message: data.error || "Something went wrong"
+                });
+            } else {
+                setStatsRefreshKey((current) => current + 1);
             }
-        );
-
-        const data = await response.json();
-
-        if (!response.ok) {
-            setError(data.error || "Something went wrong");
-        } else {
-            setStatsRefreshKey((current) => current + 1);
+        } finally {
+            setDeletingProjectId(null);
         }
     }
     
@@ -296,24 +348,42 @@ async function handleViewTasks(projectId) {
     if (selectedProjectId === projectId) {
         setSelectedProjectId(null);
         setTasks([]);
+        setTaskLoadError(null);
         setTaskAssignees([]);
         setTaskPriorityFilter("all");
         setTaskStatusFilter("all");
+        setTaskFilterError("");
         return;
     }
+
+    if (loadingTasksProjectId !== null) {
+        return;
+    }
+
     setError("");
+    setTaskLoadError(null);
+    setLoadingTasksProjectId(projectId);
 
-    const response = await apiFetch(
-        `${import.meta.env.VITE_API_URL}/projects/${projectId}/tasks`
-    );
+    try {
+        const response = await apiFetch(
+            `${import.meta.env.VITE_API_URL}/projects/${projectId}/tasks`
+        );
 
-    const data = await response.json();
+        const data = await response.json();
 
-    if (response.ok) {
+        if (!response.ok) {
+            setTaskLoadError({
+                projectId,
+                message: data.error || "Failed to load tasks"
+            });
+            return;
+        }
+
         setSelectedProjectId(projectId);
         setTasks(data);
         setTaskPriorityFilter("all");
         setTaskStatusFilter("all");
+        setTaskFilterError("");
 
         const project = projects.find(
             (currentProject) => currentProject.id === projectId
@@ -349,12 +419,18 @@ async function handleViewTasks(projectId) {
                 [projectId]: "viewer"
             }));
         }
-    } else {
-        setError(data.error || "Failed to load tasks");
+    } finally {
+        setLoadingTasksProjectId(null);
     }
 }
 
 async function handleTaskFilterChange(priority, status) {
+    if (taskFilterLoading) {
+        return;
+    }
+
+    const previousPriority = taskPriorityFilter;
+    const previousStatus = taskStatusFilter;
     const params = new URLSearchParams();
 
     if (priority !== "all") {
@@ -368,6 +444,8 @@ async function handleTaskFilterChange(priority, status) {
     setTaskPriorityFilter(priority);
     setTaskStatusFilter(status);
     setError("");
+    setTaskFilterError("");
+    setTaskFilterLoading(true);
 
     try {
         const query = params.toString();
@@ -380,10 +458,16 @@ async function handleTaskFilterChange(priority, status) {
         if (response.ok) {
             setTasks(data);
         } else {
-            setError(data.error || "Failed to filter tasks");
+            setTaskPriorityFilter(previousPriority);
+            setTaskStatusFilter(previousStatus);
+            setTaskFilterError(data.error || "Failed to filter tasks");
         }
     } catch {
-        setError("Failed to filter tasks");
+        setTaskPriorityFilter(previousPriority);
+        setTaskStatusFilter(previousStatus);
+        setTaskFilterError("Failed to filter tasks");
+    } finally {
+        setTaskFilterLoading(false);
     }
 }
 
@@ -418,78 +502,104 @@ async function handleCreateTask(taskData) {
             ]);
         }
         setStatsRefreshKey((current) => current + 1);
+        return { success: true, error: "" };
     } else {
-        setError(data.error || "Failed to create task");
+        return {
+            success: false,
+            error: data.error || "Failed to create task"
+        };
     }
 }
 
 async function handleEditTask(id) {
+    if (savingTaskId === id) {
+        return;
+    }
+
     setError("");
+    setTaskEditError("");
+    setSavingTaskId(id);
 
-    const response = await apiFetch(
-        `${import.meta.env.VITE_API_URL}/tasks/${id}`,
-        {
-            method: "PATCH",
-            headers: {
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify({
-                title: editTaskTitle,
-                status: editTaskStatus,
-                priority: editTaskPriority,
-                assigneeUsername: editTaskAssignee || null,
-                due_date: editTaskDueDate || null
-            })
-        }
-    );
-
-    const data = await response.json();
-
-    if (response.ok) {
-        setTasks((currentTasks) =>
-            currentTasks.map((task) =>
-                task.id === data.task.id
-                    ? data.task
-                    : task
-            ).filter((task) =>
-                (taskPriorityFilter === "all" ||
-                    task.priority === taskPriorityFilter) &&
-                (taskStatusFilter === "all" ||
-                    task.status === taskStatusFilter)
-            )
+    try {
+        const response = await apiFetch(
+            `${import.meta.env.VITE_API_URL}/tasks/${id}`,
+            {
+                method: "PATCH",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    title: editTaskTitle,
+                    status: editTaskStatus,
+                    priority: editTaskPriority,
+                    assigneeUsername: editTaskAssignee || null,
+                    due_date: editTaskDueDate || null
+                })
+            }
         );
 
-        cancelEditingTask();
-        setStatsRefreshKey((current) => current + 1);
-    } else {
-        setError(data.error || "Failed to update task");
+        const data = await response.json();
+
+        if (response.ok) {
+            setTasks((currentTasks) =>
+                currentTasks.map((task) =>
+                    task.id === data.task.id
+                        ? data.task
+                        : task
+                ).filter((task) =>
+                    (taskPriorityFilter === "all" ||
+                        task.priority === taskPriorityFilter) &&
+                    (taskStatusFilter === "all" ||
+                        task.status === taskStatusFilter)
+                )
+            );
+
+            cancelEditingTask();
+            setStatsRefreshKey((current) => current + 1);
+        } else {
+            setTaskEditError(data.error || "Failed to update task");
+        }
+    } finally {
+        setSavingTaskId(null);
     }
 }
 
 async function handleDeleteTask(id) {
+    if (deletingTaskId === id) {
+        return;
+    }
+
     setError("");
+    setTaskDeleteError(null);
+    setDeletingTaskId(id);
 
-    const response = await apiFetch(
-        `${import.meta.env.VITE_API_URL}/tasks/${id}`,
-        {
-            method: "DELETE",
-
-        }
-    );
-
-    const data = await response.json();
-
-    if (response.ok) {
-        setTasks((currentTasks) =>
-            currentTasks.filter((task) => task.id !== id)
+    try {
+        const response = await apiFetch(
+            `${import.meta.env.VITE_API_URL}/tasks/${id}`,
+            {
+                method: "DELETE"
+            }
         );
-        setStatsRefreshKey((current) => current + 1);
-    } else {
-        setError(data.error || "Failed to delete task");
+
+        const data = await response.json();
+
+        if (response.ok) {
+            setTasks((currentTasks) =>
+                currentTasks.filter((task) => task.id !== id)
+            );
+            setStatsRefreshKey((current) => current + 1);
+        } else {
+            setTaskDeleteError({
+                taskId: id,
+                message: data.error || "Failed to delete task"
+            });
+        }
+    } finally {
+        setDeletingTaskId(null);
     }
 }
 
-async function loadMembers(projectId) {
+async function loadMembers(projectId, showGlobalError = true) {
     setError("");
 
     const response = await apiFetch(
@@ -501,8 +611,15 @@ async function loadMembers(projectId) {
     if (response.ok) {
         setSelectedMembersProjectId(projectId);
         setMembers(data);
+        return "";
     } else {
-        setError(data.error || "Failed to load members");
+        const message = data.error || "Failed to load members";
+
+        if (showGlobalError) {
+            setError(message);
+        }
+
+        return message;
     }
 }
 
@@ -510,10 +627,26 @@ async function handleViewMembers(projectId) {
     if (selectedMembersProjectId === projectId) {
         setSelectedMembersProjectId(null);
         setMembers([]);
+        setMemberLoadError(null);
         return;
     }
 
-    await loadMembers(projectId);
+    if (loadingMembersProjectId !== null) {
+        return;
+    }
+
+    setMemberLoadError(null);
+    setLoadingMembersProjectId(projectId);
+
+    try {
+        const message = await loadMembers(projectId, false);
+
+        if (message) {
+            setMemberLoadError({ projectId, message });
+        }
+    } finally {
+        setLoadingMembersProjectId(null);
+    }
 }
 
 async function handleAddMember(username, role) {
@@ -537,51 +670,80 @@ async function handleAddMember(username, role) {
 
     if (response.ok) {
         await loadMembers(selectedMembersProjectId);
+        return { success: true, error: "" };
     } else {
-        setError(data.error || "Failed to add member");
+        return {
+            success: false,
+            error: data.error || "Failed to add member"
+        };
     }
 }
 
 async function handleRemoveMember(userId) {
+    if (removingMemberId === userId) {
+        return;
+    }
+
     setError("");
+    setMemberRemoveError(null);
+    setRemovingMemberId(userId);
 
-    const response = await apiFetch(
-        `${import.meta.env.VITE_API_URL}/projects/${selectedMembersProjectId}/members/${userId}`,
-        {
-            method: "DELETE",
+    try {
+        const response = await apiFetch(
+            `${import.meta.env.VITE_API_URL}/projects/${selectedMembersProjectId}/members/${userId}`,
+            {
+                method: "DELETE"
+            }
+        );
 
+        const data = await response.json();
+
+        if (response.ok) {
+            await loadMembers(selectedMembersProjectId);
+        } else {
+            setMemberRemoveError({
+                memberId: userId,
+                message: data.error || "Failed to remove member"
+            });
         }
-    );
-
-    const data = await response.json();
-
-    if (response.ok) {
-        await loadMembers(selectedMembersProjectId);
-    } else {
-        setError(data.error || "Failed to remove member");
+    } finally {
+        setRemovingMemberId(null);
     }
 }
 
 async function handleUpdateMemberRole(userId, role) {
+    if (updatingMemberId === userId) {
+        return;
+    }
+
     setError("");
+    setMemberRoleError(null);
+    setUpdatingMemberId(userId);
 
-    const response = await apiFetch(
-        `${import.meta.env.VITE_API_URL}/projects/${selectedMembersProjectId}/members/${userId}`,
-        {
-            method: "PATCH",
-            headers: {
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify({ role })
+    try {
+        const response = await apiFetch(
+            `${import.meta.env.VITE_API_URL}/projects/${selectedMembersProjectId}/members/${userId}`,
+            {
+                method: "PATCH",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({ role })
+            }
+        );
+
+        const data = await response.json();
+
+        if (response.ok) {
+            await loadMembers(selectedMembersProjectId);
+        } else {
+            setMemberRoleError({
+                memberId: userId,
+                message: data.error || "Failed to update member role"
+            });
         }
-    );
-
-    const data = await response.json();
-
-    if (response.ok) {
-        await loadMembers(selectedMembersProjectId);
-    } else {
-        setError(data.error || "Failed to update member role");
+    } finally {
+        setUpdatingMemberId(null);
     }
 }
 
@@ -589,9 +751,11 @@ async function handleViewActivity(projectId) {
     if (selectedActivityProjectId === projectId) {
         setSelectedActivityProjectId(null);
         setActivities([]);
+        setActivityError("");
         return;
     }
     setError("");
+    setActivityError("");
     setSelectedActivityProjectId(projectId);
     setActivities([]);
     setActivityLoading(true);
@@ -606,10 +770,10 @@ async function handleViewActivity(projectId) {
         if (response.ok) {
             setActivities(data);
         } else {
-            setError(data.error || "Failed to load activity");
+            setActivityError(data.error || "Failed to load activity");
         }
     } catch {
-        setError("Failed to load activity");
+        setActivityError("Failed to load activity");
     } finally {
         setActivityLoading(false);
     }
@@ -622,12 +786,13 @@ const filteredProjects = projects.filter((project) => {
 
 
     if (loading) {
-    return <p>Loading...</p>;
+    return <p role="status">Loading projects...</p>;
 }
 
 
     return (
     <div className="projects-page">
+        <a className="skip-link" href="#main-content">Skip to main content</a>
         <header className="hub-header">
             <div className="brand">
                 <div className="brand-mark">
@@ -645,6 +810,7 @@ const filteredProjects = projects.filter((project) => {
                 )}
                 <button
                     className="logout-btn"
+                    type="button"
                     onClick={handleLogout}
                 >
                     <LogOut size={14} />
@@ -653,12 +819,17 @@ const filteredProjects = projects.filter((project) => {
             </div>
         </header>
 
-        <main className="hub-body">
+        <main className="hub-body" id="main-content" tabIndex="-1">
+            <h1 className="sr-only">Projects dashboard</h1>
             <DashboardStats refreshKey={statsRefreshKey} />
             
             <div className="toolbar">
     <button
     className="btn-primary"
+    ref={newProjectButtonRef}
+    type="button"
+    aria-expanded={showNewProject}
+    aria-controls="new-project-form"
     onClick={() => setShowNewProject((current) => !current)}
 >
     <Plus size={15} />
@@ -672,6 +843,7 @@ const filteredProjects = projects.filter((project) => {
             className="search-input"
             type="text"
             placeholder="Search projects by name"
+            aria-label="Search projects by name"
             value={searchTerm}
             onChange={(e) =>
                 setSearchTerm(e.target.value)
@@ -682,6 +854,7 @@ const filteredProjects = projects.filter((project) => {
     <div className="select-wrap">
         <select
             className="select-input"
+            aria-label="Filter projects by status"
             value={statusFilter}
             onChange={(e) =>
                 setStatusFilter(e.target.value)
@@ -715,12 +888,15 @@ const filteredProjects = projects.filter((project) => {
     </div>
 </div>
 
-            {error && <p>{error}</p>}
+            {error && <p role="alert">{error}</p>}
 
             {showNewProject && (
     <ProjectForm
     onCreate={handleCreateProject}
-    onCancel={() => setShowNewProject(false)}
+    onCancel={() => {
+        setShowNewProject(false);
+        newProjectButtonRef.current?.focus();
+    }}
 />
 )}
 
@@ -748,13 +924,38 @@ const filteredProjects = projects.filter((project) => {
             setEditStatus={setEditStatus}
             editDueDate={editDueDate}
             setEditDueDate={setEditDueDate}
+            isSaving={savingProjectId === project.id}
+            editError={projectEditError}
+            isDeleting={deletingProjectId === project.id}
+            deleteError={
+                projectDeleteError?.projectId === project.id
+                    ? projectDeleteError.message
+                    : ""
+            }
             startEditing={startEditing}
             handleEditProject={handleEditProject}
             handleDeleteProject={handleDeleteProject}
             cancelEditing={cancelEditing}
             handleViewTasks={handleViewTasks}
+            tasksOpen={selectedProjectId === project.id}
+            isLoadingTasks={loadingTasksProjectId === project.id}
+            isTasksRequestActive={loadingTasksProjectId !== null}
+            taskLoadError={
+                taskLoadError?.projectId === project.id
+                    ? taskLoadError.message
+                    : ""
+            }
             handleViewMembers={handleViewMembers}
+            membersOpen={selectedMembersProjectId === project.id}
+            isLoadingMembers={loadingMembersProjectId === project.id}
+            isMembersRequestActive={loadingMembersProjectId !== null}
+            memberLoadError={
+                memberLoadError?.projectId === project.id
+                    ? memberLoadError.message
+                    : ""
+            }
             handleViewActivity={handleViewActivity}
+            activityOpen={selectedActivityProjectId === project.id}
         />
 
         {selectedProjectId === project.id && (
@@ -773,6 +974,8 @@ const filteredProjects = projects.filter((project) => {
             priority={taskPriorityFilter}
             status={taskStatusFilter}
             onChange={handleTaskFilterChange}
+            loading={taskFilterLoading}
+            error={taskFilterError}
         />
         <TaskList
     tasks={tasks}
@@ -787,6 +990,10 @@ const filteredProjects = projects.filter((project) => {
     setEditTaskAssignee={setEditTaskAssignee}
     editTaskDueDate={editTaskDueDate}
     setEditTaskDueDate={setEditTaskDueDate}
+    savingTaskId={savingTaskId}
+    editError={taskEditError}
+    deletingTaskId={deletingTaskId}
+    deleteError={taskDeleteError}
     members={taskAssignees}
     startEditingTask={startEditingTask}
     handleEditTask={handleEditTask}
@@ -804,6 +1011,10 @@ const filteredProjects = projects.filter((project) => {
         <MemberList
     members={members}
     handleRemoveMember={handleRemoveMember}
+    removingMemberId={removingMemberId}
+    memberRemoveError={memberRemoveError}
+    updatingMemberId={updatingMemberId}
+    memberRoleError={memberRoleError}
     handleUpdateMemberRole={handleUpdateMemberRole}
     canManage={Number(project.user_id) === Number(currentUser?.id)}
 />
@@ -813,6 +1024,7 @@ const filteredProjects = projects.filter((project) => {
     <ActivityList
         activities={activities}
         loading={activityLoading}
+        error={activityError}
     />
 )}
     </div>

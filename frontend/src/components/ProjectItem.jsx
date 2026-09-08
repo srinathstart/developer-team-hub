@@ -1,3 +1,4 @@
+import { useEffect, useRef } from "react";
 import {
     ListChecks,
     Users,
@@ -19,17 +20,40 @@ function ProjectItem({
     setEditStatus,
     editDueDate,
     setEditDueDate,
+    isSaving,
+    editError,
+    isDeleting,
+    deleteError,
     startEditing,
     handleEditProject,
     handleDeleteProject,
     cancelEditing,
     handleViewTasks,
+    tasksOpen,
+    isLoadingTasks,
+    isTasksRequestActive,
+    taskLoadError,
     handleViewMembers,
-    handleViewActivity
+    membersOpen,
+    isLoadingMembers,
+    isMembersRequestActive,
+    memberLoadError,
+    handleViewActivity,
+    activityOpen
 }) {
     const isEditing = editingId === project.id;
+    const editButtonRef = useRef(null);
+    const wasEditing = useRef(false);
     const isOwner = Number(project.user_id) === Number(currentUserId);
     const isAdmin = currentUserRole === "admin";
+
+    useEffect(() => {
+        if (wasEditing.current && !isEditing) {
+            editButtonRef.current?.focus();
+        }
+
+        wasEditing.current = isEditing;
+    }, [isEditing]);
 
     function getStatusClass(status) {
         if (status === "completed") {
@@ -72,13 +96,20 @@ function ProjectItem({
     }
 
     return (
-        <div className="project-card">
+        <article
+            className="project-card"
+            aria-label={isEditing ? `Editing ${project.name}` : undefined}
+            aria-labelledby={!isEditing ? `project-title-${project.id}` : undefined}
+        >
             {isEditing ? (
                 <>
                     <input
                         className="text-input"
                         type="text"
+                        aria-label="Project name"
+                        autoFocus
                         value={editName}
+                        disabled={isSaving}
                         onChange={(e) =>
                             setEditName(e.target.value)
                         }
@@ -86,7 +117,9 @@ function ProjectItem({
 
                     <textarea
                         className="textarea-input"
+                        aria-label="Project description"
                         value={editDescription}
+                        disabled={isSaving}
                         onChange={(e) =>
                             setEditDescription(e.target.value)
                         }
@@ -94,7 +127,9 @@ function ProjectItem({
 
                     <select
                         className="select-input"
+                        aria-label="Project status"
                         value={editStatus}
+                        disabled={isSaving}
                         onChange={(e) =>
                             setEditStatus(e.target.value)
                         }
@@ -122,34 +157,45 @@ function ProjectItem({
                             id={`edit-due-date-${project.id}`}
                             type="date"
                             value={editDueDate}
+                            disabled={isSaving}
                             onChange={(e) =>
                                 setEditDueDate(e.target.value)
                             }
                         />
                     </div>
 
+                    {editError && (
+                        <p className="project-edit-error" role="alert">
+                            {editError}
+                        </p>
+                    )}
+
                     <div className="panel-actions">
                         <button
                             className="btn-secondary"
+                            type="button"
                             onClick={cancelEditing}
+                            disabled={isSaving}
                         >
                             Cancel
                         </button>
 
                         <button
                             className="btn-primary"
+                            type="button"
+                            disabled={isSaving}
                             onClick={() =>
                                 handleEditProject(project.id)
                             }
                         >
-                            Save changes
+                            {isSaving ? "Saving..." : "Save changes"}
                         </button>
                     </div>
                 </>
             ) : (
                 <>
                     <div className="card-top">
-                        <h3 className="card-title">
+                        <h3 className="card-title" id={`project-title-${project.id}`}>
                             {project.name}
                         </h3>
 
@@ -172,29 +218,43 @@ function ProjectItem({
                             : "No due date"}
                     </p>
 
+                    {deleteError && (
+                        <p className="project-delete-error" role="alert">
+                            {deleteError}
+                        </p>
+                    )}
+
                     <div className="card-actions">
                         <button
                             className="icon-btn"
+                            type="button"
+                            disabled={isTasksRequestActive}
+                            aria-expanded={tasksOpen}
                             onClick={() =>
                                 handleViewTasks(project.id)
                             }
                         >
                             <ListChecks size={14} />
-                            View Tasks
+                            {isLoadingTasks ? "Loading..." : "View Tasks"}
                         </button>
 
                         <button
                             className="icon-btn"
+                            type="button"
+                            disabled={isMembersRequestActive}
+                            aria-expanded={membersOpen}
                             onClick={() =>
                                 handleViewMembers(project.id)
                             }
                         >
                             <Users size={14} />
-                            View Members
+                            {isLoadingMembers ? "Loading..." : "View Members"}
                         </button>
 
                         <button
                             className="icon-btn"
+                            type="button"
+                            aria-expanded={activityOpen}
                             onClick={() =>
                                 handleViewActivity(project.id)
                             }
@@ -206,6 +266,8 @@ function ProjectItem({
                         {isOwner && (
                             <button
                                 className="icon-btn"
+                                type="button"
+                                ref={editButtonRef}
                                 onClick={() =>
                                     startEditing(project)
                                 }
@@ -218,18 +280,32 @@ function ProjectItem({
                         {(isOwner || isAdmin) && (
                             <button
                                 className="icon-btn danger"
+                                type="button"
+                                disabled={isDeleting}
                                 onClick={() =>
                                     handleDeleteProject(project.id)
                                 }
                             >
                                 <Trash2 size={14} />
-                                Delete
+                                {isDeleting ? "Deleting..." : "Delete"}
                             </button>
                         )}
                     </div>
+
+                    {taskLoadError && (
+                        <p className="project-task-load-error" role="alert">
+                            {taskLoadError}
+                        </p>
+                    )}
+
+                    {memberLoadError && (
+                        <p className="project-member-load-error" role="alert">
+                            {memberLoadError}
+                        </p>
+                    )}
                 </>
             )}
-        </div>
+        </article>
     );
 }
 

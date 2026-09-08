@@ -51,11 +51,11 @@ function DashboardStats({ refreshKey }) {
     }, [refreshKey]);
 
     if (error) {
-        return <p className="stats-error">{error}</p>;
+        return <p className="stats-error" role="alert">{error}</p>;
     }
 
     if (!stats) {
-        return <p className="stats-loading">Loading summary...</p>;
+        return <p className="stats-loading" role="status">Loading summary...</p>;
     }
 
     return (
