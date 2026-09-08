@@ -8,11 +8,29 @@ function jsonErrorResponse(message, status) {
     );
 }
 
+function getCookie(name) {
+    const prefix = `${encodeURIComponent(name)}=`;
+    const cookie = document.cookie
+        .split("; ")
+        .find((item) => item.startsWith(prefix));
+
+    return cookie ? decodeURIComponent(cookie.slice(prefix.length)) : null;
+}
+
 export default async function apiFetch(url, options = {}) {
     const headers = new Headers(options.headers);
+    const method = (options.method || "GET").toUpperCase();
 
     // Browser authentication is handled by the HttpOnly cookie.
     headers.delete("Authorization");
+
+    if (["POST", "PUT", "PATCH", "DELETE"].includes(method)) {
+        const csrfToken = getCookie("csrfToken");
+
+        if (csrfToken) {
+            headers.set("X-CSRF-Token", csrfToken);
+        }
+    }
 
     try {
         const response = await fetch(url, {

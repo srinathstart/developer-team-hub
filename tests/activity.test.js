@@ -1,6 +1,7 @@
 const request = require("supertest");
 const app = require("../index");
 const pool = require("../db");
+const { getAuthToken } = require("./helpers");
 
 async function registerAndLogin(username) {
     const password = "Test1234";
@@ -19,7 +20,7 @@ async function registerAndLogin(username) {
             password
         });
 
-    return loginResponse.body.token;
+    return getAuthToken(loginResponse);
 }
 
 describe("Activity routes", () => {
@@ -86,7 +87,7 @@ describe("Activity routes", () => {
         });
 
     const memberToken =
-        memberLogin.body.token;
+        getAuthToken(memberLogin);
 
     const createResponse = await request(app)
         .post("/projects")

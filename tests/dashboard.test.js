@@ -1,5 +1,6 @@
 const request = require("supertest");
 const app = require("../index");
+const { getAuthToken } = require("./helpers");
 
 async function registerAndLogin(username) {
     const password = "Test1234";
@@ -12,7 +13,7 @@ async function registerAndLogin(username) {
         .post("/auth/login")
         .send({ username, password });
 
-    return loginResponse.body.token;
+    return getAuthToken(loginResponse);
 }
 
 describe("Dashboard statistics", () => {

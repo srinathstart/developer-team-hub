@@ -6,6 +6,7 @@ const taskRouter = require("./routes/tasks");
 
 const logger = require("./middleware/logger");
 const errorHandler = require("./middleware/errorHandler");
+const csrf = require("./middleware/csrf");
 const projectEvents = require("./events/projectEvents");
 const {
     createProjectWebSocketServer
@@ -36,6 +37,7 @@ const {
 app.use(express.json());
 app.use(logger);
 app.use("/auth", authRouter);
+app.use(csrf);
 
 
 app.get("/", (req, res) => {

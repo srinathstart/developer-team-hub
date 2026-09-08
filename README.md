@@ -11,6 +11,7 @@ Users can create projects, invite registered users as members, assign roles and 
 - Register and log in with a username and password
 - Passwords are hashed with bcrypt
 - Protected API routes use JSON Web Tokens (JWT) in HttpOnly cookies
+- Data-changing browser requests are protected with CSRF tokens
 - Usernames are trimmed and authentication input is validated
 - Authenticated WebSocket connections
 - Project events are sent only to the project owner, its members, and administrators
@@ -53,6 +54,13 @@ Users can create projects, invite registered users as members, assign roles and 
 - Project activity history for project, task, and member changes
 - Real-time project creation, update, and deletion events
 
+### Administration
+
+- Administrators can search registered users and change their `user` or `admin` role
+- Administrators cannot remove their own administrator role through the interface
+- Role changes are stored in an administrator audit history
+- The administration page and API routes reject non-administrator accounts
+
 ## Tech Stack
 
 ### Frontend
@@ -78,7 +86,7 @@ Users can create projects, invite registered users as members, assign roles and 
 ### Existing automated checks
 
 - Jest and Supertest for the backend
-- Vitest and Testing Library dependencies in the frontend
+- Vitest and Testing Library for frontend component checks
 - ESLint and Vite production builds
 
 ## Project Structure
@@ -88,16 +96,20 @@ developer-team-hub/
 ├── events/
 │   └── projectEvents.js
 ├── middleware/
+│   ├── adminOnly.js
 │   ├── auth.js
+│   ├── csrf.js
 │   ├── errorHandler.js
 │   ├── logger.js
 │   └── validateProject.js
 ├── migrations/
 │   ├── 001_add_task_assignee.sql
 │   ├── 002_add_task_due_date.sql
-│   └── 003_expand_activity_action.sql
+│   ├── 003_expand_activity_action.sql
+│   └── 004_add_admin_audit_logs.sql
 ├── routes/
 │   ├── activity.js
+│   ├── admin.js
 │   ├── auth.js
 │   ├── dashboard.js
 │   ├── members.js
@@ -105,32 +117,53 @@ developer-team-hub/
 │   └── tasks.js
 ├── tests/
 │   ├── activity.test.js
+│   ├── admin.test.js
 │   ├── auth.test.js
 │   ├── dashboard.test.js
 │   ├── health.test.js
+│   ├── helpers.js
 │   ├── members.test.js
 │   ├── projects.test.js
+│   ├── setup.js
 │   ├── tasks.test.js
 │   └── websocket.test.js
 ├── utils/
-│   └── activityLogger.js
+│   ├── activityLogger.js
+│   └── cookies.js
 ├── frontend/
 │   ├── src/
 │   │   ├── components/
 │   │   │   ├── ActivityList.jsx
+│   │   │   ├── AdminUsers.jsx
 │   │   │   ├── DashboardStats.jsx
 │   │   │   ├── Login.jsx
 │   │   │   ├── MemberForm.jsx
 │   │   │   ├── MemberList.jsx
 │   │   │   ├── ProjectForm.jsx
+│   │   │   ├── ProjectForm.test.jsx
+│   │   │   ├── ProjectHeader.jsx
 │   │   │   ├── ProjectItem.jsx
+│   │   │   ├── ProjectToolbar.jsx
+│   │   │   ├── ProjectWorkspace.jsx
 │   │   │   ├── Projects.jsx
 │   │   │   ├── Register.jsx
 │   │   │   ├── TaskFilters.jsx
 │   │   │   ├── TaskForm.jsx
 │   │   │   └── TaskList.jsx
+│   │   ├── hooks/
+│   │   │   ├── useProjectActivity.js
+│   │   │   ├── useProjectCreation.js
+│   │   │   ├── useProjectDeletion.js
+│   │   │   ├── useProjectEditing.js
+│   │   │   ├── useProjectMembers.js
+│   │   │   ├── useProjectTasks.js
+│   │   │   ├── useProjectsData.js
+│   │   │   ├── useTaskDeletion.js
+│   │   │   └── useTaskEditing.js
+│   │   ├── api.js
 │   │   ├── App.jsx
-│   │   └── App.css
+│   │   ├── App.css
+│   │   └── main.jsx
 │   ├── .env.example
 │   └── package.json
 ├── .env.example
@@ -142,7 +175,7 @@ developer-team-hub/
 └── README.md
 ```
 
-The old `data/` and `logs/` files are leftovers from an earlier learning stage. The current application stores users, projects, members, tasks, and activity records in PostgreSQL.
+The old files in `data/` are leftovers from an earlier learning stage. The current application stores users, projects, members, tasks, activity records, and administrator audit records in PostgreSQL.
 
 ## Prerequisites
 
@@ -273,15 +306,28 @@ Open `http://localhost:5173/register` to create an account, or `http://localhost
 
 Normal registration always creates a user with the `user` role. The application does not grant administrator access based on a special username.
 
+### Creating the first administrator
+
+Because only an existing administrator can change roles through the application, promote the first administrator directly in the development database after registering the account:
+
+```sql
+UPDATE users
+SET role = 'admin'
+WHERE username = 'your_username';
+```
+
+Log out and log in again afterward so the new JWT contains the updated role. From then on, that administrator can manage roles at `/admin`.
+
 ## Frontend Routes
 
 | Route | Purpose |
 | --- | --- |
 | `/register` | Create a user account |
-| `/login` | Log in and receive an HttpOnly authentication cookie |
+| `/login` | Log in and receive authentication and CSRF cookies |
 | `/projects` | View the authenticated project dashboard |
+| `/admin` | Manage user roles and view role-change history as an administrator |
 
-If a token is missing or rejected, the projects page redirects to `/login`.
+If authentication is missing or rejected, protected frontend pages redirect to `/login`. A signed-in non-administrator who opens `/admin` is redirected to `/projects`.
 
 ## API Overview
 
@@ -291,6 +337,8 @@ Except for registration, login, the root route, and the health check, browser AP
 Authorization: Bearer <token>
 ```
 
+For cookie-authenticated `POST`, `PUT`, `PATCH`, and `DELETE` requests, the frontend reads the non-HttpOnly `csrfToken` cookie and sends its value in the `X-CSRF-Token` header. The backend rejects the request with `403` when the cookie and header are missing or do not match. Registration and login are exempt because the user does not have these cookies before authentication.
+
 ### Public routes
 
 | Method | Route | Purpose |
@@ -298,7 +346,14 @@ Authorization: Bearer <token>
 | `GET` | `/` | Basic API message |
 | `GET` | `/health` | Health check |
 | `POST` | `/auth/register` | Register a user |
-| `POST` | `/auth/login` | Log in and receive a JWT |
+| `POST` | `/auth/login` | Log in and receive authentication and CSRF cookies; the JWT is not included in the JSON body |
+
+### Authentication routes
+
+| Method | Route | Purpose |
+| --- | --- | --- |
+| `GET` | `/auth/me` | Get the currently authenticated user |
+| `POST` | `/auth/logout` | Clear the authentication and CSRF cookies |
 
 ### Project routes
 
@@ -373,6 +428,16 @@ Use an empty `assigneeUsername` to leave or make a task unassigned. An assignee 
 | `GET` | `/projects/:projectId/activity` | View activity for an accessible project |
 | `GET` | `/dashboard/stats` | Get statistics for projects visible to the current user |
 
+### Administrator routes
+
+All administrator routes require an authenticated account with the `admin` role.
+
+| Method | Route | Purpose |
+| --- | --- | --- |
+| `GET` | `/admin/users` | List registered users |
+| `PATCH` | `/admin/users/:id/role` | Change a user's `user` or `admin` role |
+| `GET` | `/admin/audit` | View administrator role-change history |
+
 ## Permissions
 
 | Action | Owner | Editor | Viewer | Administrator |
@@ -433,7 +498,6 @@ By default, it uses `developer_team_hub_test`. That database must exist and cont
 
 This is a learning project, not a production-ready application.
 
-- Cookie-based authentication still needs additional CSRF review if the frontend and backend are later deployed on different sites.
 - There is no password reset or email verification.
 - A formal WCAG audit with browser accessibility tools and assistive technology has not been completed.
 - Deployment, Docker, and CI/CD are not configured yet.
@@ -449,6 +513,7 @@ This is a learning project, not a production-ready application.
 - Async/await
 - PostgreSQL queries, relationships, and transactions
 - Password hashing and role-based permissions
+- HttpOnly authentication cookies and CSRF protection
 - EventEmitter and authenticated WebSockets
 - Environment-based configuration
 - Graceful shutdown

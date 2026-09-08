@@ -33,4 +33,19 @@ function authCookie(token, maxAgeSeconds = 60 * 60) {
     return parts.join("; ");
 }
 
-module.exports = { parseCookies, authCookie };
+function csrfCookie(token, maxAgeSeconds = 60 * 60) {
+    const parts = [
+        `csrfToken=${encodeURIComponent(token)}`,
+        "Path=/",
+        "SameSite=Lax",
+        `Max-Age=${maxAgeSeconds}`
+    ];
+
+    if (process.env.NODE_ENV === "production") {
+        parts.push("Secure");
+    }
+
+    return parts.join("; ");
+}
+
+module.exports = { parseCookies, authCookie, csrfCookie };

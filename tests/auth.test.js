@@ -1,6 +1,12 @@
 const request = require("supertest");
 const app = require("../index");
 
+function hasAuthenticationCookie(response) {
+    return (response.headers["set-cookie"] || []).some((cookie) =>
+        cookie.startsWith("token=") && cookie.includes("HttpOnly")
+    );
+}
+
 describe("Auth routes", () => {
     test("POST /auth/register should register a user", async () => {
         const response = await request(app)
@@ -43,7 +49,7 @@ describe("Auth routes", () => {
             .toBe("Username already exists");
     });
 
-    test("POST /auth/login should return a token", async () => {
+    test("POST /auth/login should set an HttpOnly cookie", async () => {
         await request(app)
             .post("/auth/register")
             .send({
@@ -59,7 +65,8 @@ describe("Auth routes", () => {
             });
 
         expect(response.statusCode).toBe(200);
-        expect(response.body.token).toBeDefined();
+        expect(hasAuthenticationCookie(response)).toBe(true);
+        expect(response.body.token).toBeUndefined();
     });
 
     test("POST /auth/login should reject wrong password", async () => {
@@ -175,6 +182,7 @@ describe("Auth routes", () => {
             });
 
         expect(response.statusCode).toBe(200);
-        expect(response.body.token).toBeDefined();
+        expect(hasAuthenticationCookie(response)).toBe(true);
+        expect(response.body.token).toBeUndefined();
     });
 });

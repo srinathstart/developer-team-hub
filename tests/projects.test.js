@@ -1,6 +1,7 @@
 const request = require("supertest");
 const app = require("../index");
 const pool = require("../db");
+const { getAuthToken } = require("./helpers");
 
 async function registerAndLogin(
     username,
@@ -20,7 +21,7 @@ async function registerAndLogin(
             password
         });
 
-    return loginResponse.body.token;
+    return getAuthToken(loginResponse);
 }
 
 function projectData(name = "Test Project") {
@@ -326,7 +327,7 @@ describe("Project routes", () => {
             });
 
         const adminToken =
-            loginResponse.body.token;
+            getAuthToken(loginResponse);
 
         const createResponse = await request(app)
             .post("/projects")
@@ -499,7 +500,7 @@ test("GET /projects should sort oldest first", async () => {
             });
 
         const adminToken =
-            adminLogin.body.token;
+            getAuthToken(adminLogin);
 
         await request(app)
             .post("/projects")

@@ -1,5 +1,6 @@
 const request = require("supertest");
 const app = require("../index");
+const { getAuthToken } = require("./helpers");
 
 async function createUserWithProject(username) {
     const password = "Test1234";
@@ -19,7 +20,7 @@ async function createUserWithProject(username) {
             password
         });
 
-    const token = loginResponse.body.token;
+    const token = getAuthToken(loginResponse);
 
     const projectResponse = await request(app)
         .post("/projects")

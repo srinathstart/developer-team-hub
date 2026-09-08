@@ -1,8 +1,10 @@
 const express = require("express");
 const bcrypt = require("bcrypt");
+const crypto = require("crypto");
 const jwt = require("jsonwebtoken");
 const auth = require("../middleware/auth");
-const { authCookie } = require("../utils/cookies");
+const csrf = require("../middleware/csrf");
+const { authCookie, csrfCookie } = require("../utils/cookies");
 
 const router = express.Router();
 
@@ -172,13 +174,14 @@ router.post("/login", async (req, res) => {
                 expiresIn: "1h"
             }
         );
+        const csrfToken = crypto.randomBytes(32).toString("hex");
 
-        res.setHeader("Set-Cookie", authCookie(token));
+        res.setHeader("Set-Cookie", [
+            authCookie(token),
+            csrfCookie(csrfToken)
+        ]);
 
-        res.json({
-            message: "Login successful",
-            token
-        });
+        res.json({ message: "Login successful" });
     } catch (error) {
         console.error(error);
 
@@ -198,8 +201,11 @@ router.get("/me", auth, (req, res) => {
     });
 });
 
-router.post("/logout", (req, res) => {
-    res.setHeader("Set-Cookie", authCookie("", 0));
+router.post("/logout", csrf, (req, res) => {
+    res.setHeader("Set-Cookie", [
+        authCookie("", 0),
+        csrfCookie("", 0)
+    ]);
     res.json({ message: "Logout successful" });
 });
 

@@ -1,6 +1,7 @@
 const request = require("supertest");
 const app = require("../index");
 const pool = require("../db");
+const { getAuthToken } = require("./helpers");
 
 async function register(username) {
     const response = await request(app)
@@ -15,7 +16,7 @@ async function login(username) {
         .post("/auth/login")
         .send({ username, password: "Test1234" });
 
-    return response.body.token;
+    return getAuthToken(response);
 }
 
 async function createAdmin(username) {
