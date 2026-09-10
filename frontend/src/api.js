@@ -48,6 +48,13 @@ export default async function apiFetch(url, options = {}) {
             response.status === 401 &&
             requestPath !== "/auth/login"
         ) {
+            if (token) {
+                sessionStorage.setItem(
+                    "authNotice",
+                    "Your session expired. Please log in again."
+                );
+            }
+
             sessionStorage.removeItem("token");
             window.location.assign("/login");
         }

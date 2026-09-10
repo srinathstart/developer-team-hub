@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { Eye, EyeOff } from "lucide-react";
 import apiFetch from "../api";
@@ -10,7 +10,14 @@ function Login() {
     const [password, setPassword] = useState("");
     const [showPassword, setShowPassword] = useState(false);
     const [error, setError] = useState("");
+    const [notice, setNotice] = useState(
+        () => sessionStorage.getItem("authNotice") || ""
+    );
     const [submitting, setSubmitting] = useState(false);
+
+    useEffect(() => {
+        sessionStorage.removeItem("authNotice");
+    }, []);
 
     async function handleSubmit(e) {
         e.preventDefault();
@@ -20,6 +27,7 @@ function Login() {
         }
 
         setError("");
+        setNotice("");
         setSubmitting(true);
 
         try {
@@ -135,6 +143,12 @@ function Login() {
                             {showPassword ? <EyeOff aria-hidden="true" /> : <Eye aria-hidden="true" />}
                         </button>
                     </div>
+
+                    {notice && (
+                        <p className="auth-notice" role="status">
+                            {notice}
+                        </p>
+                    )}
 
                     {error && (
                         <p className="auth-error" id="login-error" role="alert">
