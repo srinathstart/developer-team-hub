@@ -264,6 +264,38 @@ form {
     box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.12);
 }
 
+.auth-password-field {
+    position: relative;
+    margin-bottom: 16px;
+}
+
+.auth-password-field input {
+    margin-bottom: 0;
+    padding-right: 44px;
+}
+
+.auth-password-toggle {
+    position: absolute;
+    top: 50%;
+    right: 10px;
+    display: inline-flex;
+    padding: 4px;
+    border: 0;
+    background: transparent;
+    color: #6b7280;
+    cursor: pointer;
+    transform: translateY(-50%);
+}
+
+.auth-password-toggle:hover {
+    color: #111827;
+}
+
+.auth-password-toggle svg {
+    width: 18px;
+    height: 18px;
+}
+
 .auth-error {
     margin: -4px 0 14px;
     color: #dc2626;

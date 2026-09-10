@@ -125,7 +125,7 @@ const filteredProjects = projects.filter((project) => {
     <div className="projects-page">
         <a className="skip-link" href="#main-content">Skip to main content</a>
         <ProjectHeader
-            currentUserRole={currentUser?.role}
+            currentUser={currentUser}
             onLogout={handleLogout}
         />
 

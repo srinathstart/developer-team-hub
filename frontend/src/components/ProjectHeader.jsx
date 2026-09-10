@@ -1,7 +1,7 @@
 import { Link } from "react-router-dom";
 import { LogOut } from "lucide-react";
 
-function ProjectHeader({ currentUserRole, onLogout }) {
+function ProjectHeader({ currentUser, onLogout }) {
     return (
         <header className="hub-header">
             <div className="brand">
@@ -10,7 +10,7 @@ function ProjectHeader({ currentUserRole, onLogout }) {
             </div>
 
             <div className="header-actions">
-                {currentUserRole === "admin" && (
+                {currentUser?.role === "admin" && (
                     <Link className="admin-nav-link" to="/admin">
                         Admin
                     </Link>

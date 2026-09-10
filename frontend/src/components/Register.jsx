@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
+import { Eye, EyeOff } from "lucide-react";
 import apiFetch from "../api";
 
 function Register() {
@@ -7,6 +8,7 @@ function Register() {
 
     const [username, setUsername] = useState("");
     const [password, setPassword] = useState("");
+    const [showPassword, setShowPassword] = useState(false);
     const [error, setError] = useState("");
     const [submitting, setSubmitting] = useState(false);
 
@@ -130,18 +132,29 @@ function Register() {
                         Password
                     </label>
 
-                    <input
-                        id="password"
-                        type="password"
-                        placeholder="••••••••"
-                        autoComplete="new-password"
-                        required
-                        aria-describedby={`password-help${error ? " register-error" : ""}`}
-                        value={password}
-                        onChange={(e) =>
-                            setPassword(e.target.value)
-                        }
-                    />
+                    <div className="auth-password-field">
+                        <input
+                            id="password"
+                            type={showPassword ? "text" : "password"}
+                            placeholder="••••••••"
+                            autoComplete="new-password"
+                            required
+                            aria-describedby={`password-help${error ? " register-error" : ""}`}
+                            value={password}
+                            onChange={(e) =>
+                                setPassword(e.target.value)
+                            }
+                        />
+                        <button
+                            type="button"
+                            className="auth-password-toggle"
+                            aria-label={showPassword ? "Hide password" : "Show password"}
+                            aria-pressed={showPassword}
+                            onClick={() => setShowPassword((visible) => !visible)}
+                        >
+                            {showPassword ? <EyeOff aria-hidden="true" /> : <Eye aria-hidden="true" />}
+                        </button>
+                    </div>
 
                     <p className="auth-password-help" id="password-help">
                         At least 8 characters, including uppercase,
