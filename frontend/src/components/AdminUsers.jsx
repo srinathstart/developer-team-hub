@@ -124,6 +124,7 @@ function AdminUsers() {
         await apiFetch(`${import.meta.env.VITE_API_URL}/auth/logout`, {
             method: "POST"
         });
+        sessionStorage.removeItem("token");
         navigate("/login");
     }
 

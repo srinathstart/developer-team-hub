@@ -49,7 +49,7 @@ describe("Auth routes", () => {
             .toBe("Username already exists");
     });
 
-    test("POST /auth/login should set an HttpOnly cookie", async () => {
+    test("POST /auth/login should return a token and set an HttpOnly cookie", async () => {
         await request(app)
             .post("/auth/register")
             .send({
@@ -66,7 +66,7 @@ describe("Auth routes", () => {
 
         expect(response.statusCode).toBe(200);
         expect(hasAuthenticationCookie(response)).toBe(true);
-        expect(response.body.token).toBeUndefined();
+        expect(response.body.token).toBeDefined();
     });
 
     test("POST /auth/login should reject wrong password", async () => {
@@ -183,6 +183,6 @@ describe("Auth routes", () => {
 
         expect(response.statusCode).toBe(200);
         expect(hasAuthenticationCookie(response)).toBe(true);
-        expect(response.body.token).toBeUndefined();
+        expect(response.body.token).toBeDefined();
     });
 });

@@ -66,7 +66,10 @@ if (status) {
 }
 
 result = await pool.query(
-    `SELECT * FROM projects
+    `SELECT projects.*, owner.username AS owner_username
+     FROM projects
+     JOIN users AS owner
+     ON owner.id = projects.user_id
      ${whereClause}
      ORDER BY created_at ${sortOrder}`,
     values
@@ -81,8 +84,10 @@ result = await pool.query(
     }
 
     result = await pool.query(
-        `SELECT DISTINCT projects.*
+        `SELECT DISTINCT projects.*, owner.username AS owner_username
          FROM projects
+         JOIN users AS owner
+         ON owner.id = projects.user_id
          LEFT JOIN project_members
          ON projects.id = project_members.project_id
          WHERE (
@@ -110,8 +115,10 @@ router.get("/:id", async (req, res) => {
 
     try {
         const result = await pool.query(
-    `SELECT DISTINCT projects.*
+    `SELECT DISTINCT projects.*, owner.username AS owner_username
      FROM projects
+     JOIN users AS owner
+     ON owner.id = projects.user_id
      LEFT JOIN project_members
      ON projects.id = project_members.project_id
      WHERE projects.id = $1
@@ -152,7 +159,10 @@ router.post("/", validateProject, async (req, res) => {
     [name, description, status, due_date || null, userId]
 );
 
-        const newProject = result.rows[0];
+        const newProject = {
+            ...result.rows[0],
+            owner_username: req.user.username
+        };
         await logActivity(
     newProject.id,
     req.user.id,
@@ -208,7 +218,10 @@ router.patch("/:id", validateProject, async (req, res) => {
     [name, description, status, due_date || null, id, req.user.id]
 );
 
-        const project = result.rows[0];
+        const project = {
+            ...result.rows[0],
+            owner_username: req.user.username
+        };
 
         const changes = [];
 

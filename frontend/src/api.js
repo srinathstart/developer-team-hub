@@ -20,9 +20,13 @@ function getCookie(name) {
 export default async function apiFetch(url, options = {}) {
     const headers = new Headers(options.headers);
     const method = (options.method || "GET").toUpperCase();
+    const token = sessionStorage.getItem("token");
 
-    // Browser authentication is handled by the HttpOnly cookie.
-    headers.delete("Authorization");
+    if (token) {
+        headers.set("Authorization", `Bearer ${token}`);
+    } else {
+        headers.delete("Authorization");
+    }
 
     if (["POST", "PUT", "PATCH", "DELETE"].includes(method)) {
         const csrfToken = getCookie("csrfToken");
@@ -44,6 +48,7 @@ export default async function apiFetch(url, options = {}) {
             response.status === 401 &&
             requestPath !== "/auth/login"
         ) {
+            sessionStorage.removeItem("token");
             window.location.assign("/login");
         }
 

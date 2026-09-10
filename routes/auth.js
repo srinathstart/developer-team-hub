@@ -181,7 +181,10 @@ router.post("/login", async (req, res) => {
             csrfCookie(csrfToken)
         ]);
 
-        res.json({ message: "Login successful" });
+        res.json({
+            message: "Login successful",
+            token
+        });
     } catch (error) {
         console.error(error);
 

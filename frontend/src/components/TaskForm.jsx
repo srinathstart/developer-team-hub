@@ -89,7 +89,7 @@ function TaskForm({ onCreateTask, members }) {
             <option value="">Unassigned</option>
             {members.map((member) => (
                 <option key={member.id} value={member.username}>
-                    {member.username}
+                    {member.username}{member.role === "owner" ? " (Owner)" : ""}
                 </option>
             ))}
         </select>

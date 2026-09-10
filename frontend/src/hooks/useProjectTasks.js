@@ -63,7 +63,24 @@ function useProjectTasks({ projects, currentUser, onClearPageError, onTasksChang
                 ? await membersResponse.json()
                 : [];
 
-            setTaskAssignees(projectMembers);
+            const owner = project?.owner_username
+                ? {
+                    id: project.user_id,
+                    username: project.owner_username,
+                    role: "owner"
+                }
+                : null;
+            const assignees = owner
+                ? [
+                    owner,
+                    ...projectMembers.filter(
+                        (member) =>
+                            Number(member.id) !== Number(owner.id)
+                    )
+                ]
+                : projectMembers;
+
+            setTaskAssignees(assignees);
 
             if (Number(project?.user_id) === Number(currentUser?.id)) {
                 setProjectTaskRoles((currentRoles) => ({

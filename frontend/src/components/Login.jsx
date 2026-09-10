@@ -34,8 +34,11 @@ function Login() {
 
             const data = await response.json();
 
-            if (response.ok) {
+            if (response.ok && data.token) {
+                sessionStorage.setItem("token", data.token);
                 navigate("/projects");
+            } else if (response.ok) {
+                setError("Login response did not include an authentication token");
             } else {
                 setError(data.error || "Login failed");
             }

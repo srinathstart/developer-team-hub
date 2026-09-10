@@ -53,7 +53,14 @@ function useProjectsData({ currentUser, navigate, onError, onProjectsChanged }) 
             return undefined;
         }
 
-        const socket = new WebSocket(import.meta.env.VITE_WS_URL);
+        const socketUrl = new URL(import.meta.env.VITE_WS_URL);
+        const token = sessionStorage.getItem("token");
+
+        if (token) {
+            socketUrl.searchParams.set("token", token);
+        }
+
+        const socket = new WebSocket(socketUrl);
 
         socket.onopen = () => {
             console.log("WebSocket connected");
