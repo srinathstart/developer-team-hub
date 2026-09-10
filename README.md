@@ -1,6 +1,6 @@
 # Developer Team Hub
 
-Developer Team Hub is my first full-stack learning project. It is a small project-management application built to practise how a React frontend, a Node.js API, and a PostgreSQL database work together.
+Developer Team Hub is a full-stack project-management application built with React, Node.js, Express, and PostgreSQL.
 
 Users can create projects, invite registered users as members, assign roles and tasks, track deadlines, and see changes in real time.
 
@@ -10,8 +10,9 @@ Users can create projects, invite registered users as members, assign roles and 
 
 - Register and log in with a username and password
 - Passwords are hashed with bcrypt
-- Protected API routes use JSON Web Tokens (JWT) in HttpOnly cookies
-- Data-changing browser requests are protected with CSRF tokens
+- Protected API routes use JSON Web Tokens (JWT)
+- The deployed frontend uses bearer-token authentication stored for the browser session
+- Same-site clients can use HttpOnly authentication cookies with CSRF protection
 - Usernames are trimmed and authentication input is validated
 - Authenticated WebSocket connections
 - Project events are sent only to the project owner, its members, and administrators
@@ -100,6 +101,7 @@ developer-team-hub/
 ├── .dockerignore
 ├── Dockerfile
 ├── compose.yaml
+├── render.yaml
 ├── events/
 │   └── projectEvents.js
 ├── middleware/
@@ -122,6 +124,8 @@ developer-team-hub/
 │   ├── members.js
 │   ├── projects.js
 │   └── tasks.js
+├── scripts/
+│   └── initializeDatabase.js
 ├── tests/
 │   ├── activity.test.js
 │   ├── admin.test.js
@@ -175,6 +179,7 @@ developer-team-hub/
 │   ├── .env.example
 │   ├── Dockerfile
 │   ├── nginx.conf
+│   ├── vercel.json
 │   └── package.json
 ├── .env.example
 ├── db.js
@@ -185,7 +190,7 @@ developer-team-hub/
 └── README.md
 ```
 
-The old files in `data/` and `logs/` are leftovers from an earlier learning stage. The current application stores users, projects, members, tasks, activity records, and administrator audit records in PostgreSQL.
+Files in `data/` and `logs/` are legacy artifacts and are not used at runtime. The application stores users, projects, members, tasks, activity records, and administrator audit records in PostgreSQL.
 
 ## Prerequisites
 
@@ -340,7 +345,40 @@ docker compose down
 
 To start again later, run `docker compose up -d`. Use `docker compose down -v` only when you intentionally want to delete the Docker database volume and all records stored in it.
 
-The credentials and JWT secret in `compose.yaml` are for local Docker learning only. Replace them with securely managed values before any real deployment.
+The credentials and JWT secret in `compose.yaml` are for local Docker development only. Use securely managed values in deployed environments.
+
+## Live Deployment
+
+| Service | URL |
+| --- | --- |
+| Frontend | [developer-team-hub.vercel.app](https://developer-team-hub.vercel.app/) |
+| Backend health check | [developer-team-hub-api.onrender.com/health](https://developer-team-hub-api.onrender.com/health) |
+
+The React frontend is deployed on Vercel. The Express API and PostgreSQL database are hosted on Render.
+
+### Vercel configuration
+
+Set the project root directory to `frontend` and configure these environment variables:
+
+```env
+VITE_API_URL=https://developer-team-hub-api.onrender.com
+VITE_WS_URL=wss://developer-team-hub-api.onrender.com
+```
+
+`frontend/vercel.json` rewrites frontend routes to `index.html`, allowing React Router pages such as `/login`, `/register`, `/projects`, and `/admin` to load directly.
+
+### Render configuration
+
+The root `render.yaml` defines the Docker web service, PostgreSQL database, health check, environment variables, and initial database-schema hook. The backend requires:
+
+- `DATABASE_URL`: the Render PostgreSQL internal connection string
+- `JWT_SECRET`: a long, randomly generated secret
+- `FRONTEND_URL`: `https://developer-team-hub.vercel.app`
+- `NODE_ENV`: `production`
+
+The initializer in `scripts/initializeDatabase.js` applies `schema.sql` only when the `users` table does not exist, so it is safe to run again against an initialized database. Local and Docker database records are not copied to Render automatically.
+
+Render's free PostgreSQL database expires after 30 days. A persistent deployment requires moving to a paid database or another long-term PostgreSQL provider before that date.
 
 ## First Use
 
@@ -356,7 +394,7 @@ Normal registration always creates a user with the `user` role. The application 
 
 ### Creating the first administrator
 
-Because only an existing administrator can change roles through the application, promote the first administrator directly in the development database after registering the account:
+Because only an existing administrator can change roles through the application, register the account first and then run this statement through `psql` while connected to the intended database:
 
 ```sql
 UPDATE users
@@ -371,7 +409,7 @@ Log out and log in again afterward so the new JWT contains the updated role. Fro
 | Route | Purpose |
 | --- | --- |
 | `/register` | Create a user account |
-| `/login` | Log in and receive authentication and CSRF cookies |
+| `/login` | Log in and start an authenticated browser session |
 | `/projects` | View the authenticated project dashboard |
 | `/admin` | Manage user roles and view role-change history as an administrator |
 
@@ -379,13 +417,13 @@ If authentication is missing or rejected, protected frontend pages redirect to `
 
 ## API Overview
 
-Except for registration, login, the root route, and the health check, browser API requests use the HttpOnly authentication cookie automatically. Non-browser API clients can also authenticate with this header:
+Except for registration, login, the root route, and the health check, API routes require a valid JWT. The deployed frontend stores the token in `sessionStorage` and sends it with this header:
 
 ```text
 Authorization: Bearer <token>
 ```
 
-For cookie-authenticated `POST`, `PUT`, `PATCH`, and `DELETE` requests, the frontend reads the non-HttpOnly `csrfToken` cookie and sends its value in the `X-CSRF-Token` header. The backend rejects the request with `403` when the cookie and header are missing or do not match. Registration and login are exempt because the user does not have these cookies before authentication.
+The token is removed when the user logs out and is not retained after the browser session ends. The backend also supports HttpOnly authentication cookies for same-site clients. Cookie-authenticated `POST`, `PUT`, `PATCH`, and `DELETE` requests require the matching `csrfToken` cookie value in the `X-CSRF-Token` header. Registration and login are exempt from this CSRF check.
 
 ### Public routes
 
@@ -394,7 +432,7 @@ For cookie-authenticated `POST`, `PUT`, `PATCH`, and `DELETE` requests, the fron
 | `GET` | `/` | Basic API message |
 | `GET` | `/health` | Health check |
 | `POST` | `/auth/register` | Register a user |
-| `POST` | `/auth/login` | Log in and receive authentication and CSRF cookies; the JWT is not included in the JSON body |
+| `POST` | `/auth/login` | Log in and receive a JWT in the response; authentication and CSRF cookies are also set |
 
 ### Authentication routes
 
@@ -420,7 +458,7 @@ Example project body:
 ```json
 {
   "name": "Developer Team Hub",
-  "description": "Build and learn a full-stack application",
+  "description": "Coordinate delivery across the engineering team",
   "status": "in-progress",
   "due_date": "2026-10-15"
 }
@@ -509,7 +547,7 @@ projectUpdated
 projectDeleted
 ```
 
-The browser automatically sends its HttpOnly cookie when opening the WebSocket. The backend verifies the JWT inside it before accepting the connection and sends each event only to administrators, the project owner, and current project members.
+The deployed frontend adds the session JWT to the WebSocket connection URL because the browser WebSocket API cannot set an `Authorization` header. Same-site clients can authenticate with the HttpOnly cookie instead. The backend verifies the JWT before accepting the connection and sends each event only to administrators, the project owner, and current project members.
 
 ```text
 Project HTTP request
@@ -552,19 +590,19 @@ The GitHub Actions workflow in `.github/workflows/ci.yml` runs automatically on 
 
 The workflow uses temporary GitHub-hosted environments and does not connect to the local development database.
 
-## Current Limitations
-
-This is a learning project, not a production-ready application.
+## Known Limitations
 
 - There is no password reset or email verification.
+- The cross-site Vercel and Render deployment stores its JWT in browser `sessionStorage`, so preventing cross-site scripting remains important.
+- Browser WebSocket connections include the JWT in the connection URL because the WebSocket API cannot set a custom `Authorization` header.
 - A formal WCAG audit with browser accessibility tools and assistive technology has not been completed.
-- Deployment and continuous delivery are not configured yet.
+- The free Render PostgreSQL database has a 30-day lifetime, and the free backend service can take time to respond after being idle.
 
-## Concepts Practised
+## Technical Highlights
 
 - React components, props, state, forms, and effects
 - React Router and protected pages
-- Fetch requests and JWT authentication
+- Fetch requests and JWT bearer authentication
 - REST APIs and HTTP status codes
 - Express routers and middleware
 - Validation and error handling
@@ -576,6 +614,7 @@ This is a learning project, not a production-ready application.
 - Environment-based configuration
 - Continuous integration with GitHub Actions
 - Multi-container development with Docker Compose
+- Vercel and Render deployment
 - Graceful shutdown
 
 ## Quick Start Summary
