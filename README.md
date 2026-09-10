@@ -347,7 +347,7 @@ To start again later, run `docker compose up -d`. Use `docker compose down -v` o
 
 The credentials and JWT secret in `compose.yaml` are for local Docker development only. Use securely managed values in deployed environments.
 
-## Live Deployment
+## Live Demo
 
 | Service | URL |
 | --- | --- |
@@ -355,30 +355,6 @@ The credentials and JWT secret in `compose.yaml` are for local Docker developmen
 | Backend health check | [developer-team-hub-api.onrender.com/health](https://developer-team-hub-api.onrender.com/health) |
 
 The React frontend is deployed on Vercel. The Express API and PostgreSQL database are hosted on Render.
-
-### Vercel configuration
-
-Set the project root directory to `frontend` and configure these environment variables:
-
-```env
-VITE_API_URL=https://developer-team-hub-api.onrender.com
-VITE_WS_URL=wss://developer-team-hub-api.onrender.com
-```
-
-`frontend/vercel.json` rewrites frontend routes to `index.html`, allowing React Router pages such as `/login`, `/register`, `/projects`, and `/admin` to load directly.
-
-### Render configuration
-
-The root `render.yaml` defines the Docker web service, PostgreSQL database, health check, environment variables, and initial database-schema hook. The backend requires:
-
-- `DATABASE_URL`: the Render PostgreSQL internal connection string
-- `JWT_SECRET`: a long, randomly generated secret
-- `FRONTEND_URL`: `https://developer-team-hub.vercel.app`
-- `NODE_ENV`: `production`
-
-The initializer in `scripts/initializeDatabase.js` applies `schema.sql` only when the `users` table does not exist, so it is safe to run again against an initialized database. Local and Docker database records are not copied to Render automatically.
-
-Render's free PostgreSQL database expires after 30 days. A persistent deployment requires moving to a paid database or another long-term PostgreSQL provider before that date.
 
 ## First Use
 
@@ -589,14 +565,6 @@ The GitHub Actions workflow in `.github/workflows/ci.yml` runs automatically on 
 - **Docker builds:** builds the backend and frontend images with Docker Compose without publishing or deploying them.
 
 The workflow uses temporary GitHub-hosted environments and does not connect to the local development database.
-
-## Known Limitations
-
-- There is no password reset or email verification.
-- The cross-site Vercel and Render deployment stores its JWT in browser `sessionStorage`, so preventing cross-site scripting remains important.
-- Browser WebSocket connections include the JWT in the connection URL because the WebSocket API cannot set a custom `Authorization` header.
-- A formal WCAG audit with browser accessibility tools and assistive technology has not been completed.
-- The free Render PostgreSQL database has a 30-day lifetime, and the free backend service can take time to respond after being idle.
 
 ## Technical Highlights
 
