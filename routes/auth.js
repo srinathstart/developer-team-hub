@@ -4,6 +4,7 @@ const crypto = require("crypto");
 const jwt = require("jsonwebtoken");
 const auth = require("../middleware/auth");
 const csrf = require("../middleware/csrf");
+const loginRateLimiter = require("../middleware/loginRateLimiter");
 const { authCookie, csrfCookie } = require("../utils/cookies");
 
 const router = express.Router();
@@ -104,7 +105,7 @@ if (!/[0-9]/.test(password)) {
 }
 });
 
-router.post("/login", async (req, res) => {
+router.post("/login", loginRateLimiter, async (req, res) => {
     const { username, password } = req.body || {};
 
     if (

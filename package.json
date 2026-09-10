@@ -7,10 +7,10 @@
     "test": "NODE_ENV=test jest tests --runInBand"
   },
   "jest": {
-  "setupFilesAfterEnv": [
-    "<rootDir>/tests/setup.js"
-  ]
-},
+    "setupFilesAfterEnv": [
+      "<rootDir>/tests/setup.js"
+    ]
+  },
   "author": "",
   "license": "ISC",
   "description": "",
@@ -19,6 +19,7 @@
     "cors": "^2.8.6",
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
+    "express-rate-limit": "^8.7.0",
     "jsonwebtoken": "^9.0.3",
     "pg": "^8.23.0",
     "ws": "^8.21.3"
@@ -27,5 +28,4 @@
     "jest": "^30.4.2",
     "supertest": "^7.2.2"
   }
-  
 }
