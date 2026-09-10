@@ -35,10 +35,32 @@ function Register() {
 
             const data = await response.json();
 
-            if (response.ok) {
-                navigate("/login");
-            } else {
+            if (!response.ok) {
                 setError(data.error || "Registration failed");
+                return;
+            }
+
+            const loginResponse = await apiFetch(
+                `${import.meta.env.VITE_API_URL}/auth/login`,
+                {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({
+                        username,
+                        password
+                    })
+                }
+            );
+
+            const loginData = await loginResponse.json();
+
+            if (loginResponse.ok && loginData.token) {
+                sessionStorage.setItem("token", loginData.token);
+                navigate("/projects", { replace: true });
+            } else {
+                navigate("/login", { replace: true });
             }
         } finally {
             setSubmitting(false);
